@@ -4,6 +4,7 @@ import com.studyroom.realtime.ChatPageResponse;
 import com.studyroom.realtime.ChatService;
 import com.studyroom.realtime.PresenceService;
 import com.studyroom.realtime.UnreadResponse;
+import com.studyroom.ai.AiService;
 import com.studyroom.study.FocusEntry;
 import com.studyroom.study.StudyService;
 import com.studyroom.user.User;
@@ -48,22 +49,30 @@ public class RoomController {
             String username) {
     }
 
+    public record TutorRequest(
+            @NotBlank(message = "消息不能为空")
+            String message) {
+    }
+
     private final RoomService roomService;
     private final UserRepository userRepository;
     private final PresenceService presenceService;
     private final ChatService chatService;
     private final StudyService studyService;
+    private final AiService aiService;
 
     public RoomController(RoomService roomService,
                           UserRepository userRepository,
                           PresenceService presenceService,
                           ChatService chatService,
-                          StudyService studyService) {
+                          StudyService studyService,
+                          AiService aiService) {
         this.roomService = roomService;
         this.userRepository = userRepository;
         this.presenceService = presenceService;
         this.chatService = chatService;
         this.studyService = studyService;
+        this.aiService = aiService;
     }
 
     @PostMapping
@@ -169,6 +178,24 @@ public class RoomController {
                                    @Valid @RequestBody KickRequest request,
                                    Authentication authentication) {
         return roomService.kickMember(currentUser(authentication), id, request.username().trim());
+    }
+
+    /** AI 房间助教：仅房间成员可用，且房主已开启。 */
+    @PostMapping("/{id}/tutor")
+    public java.util.Map<String, String> tutor(@PathVariable Long id,
+                                               @Valid @RequestBody TutorRequest request,
+                                               Authentication authentication) {
+        User user = currentUser(authentication);
+        if (!chatService.isMember(id, user.getUsername())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只有房间成员可以提问助教");
+        }
+        RoomDetailResponse room = roomService.getRoomDetail(id);
+        if (!room.aiTutorEnabled()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "该房间未开启 AI 助教");
+        }
+        String reply = aiService.tutorAnswer(user, id, room.tutorPersona(), room.name(),
+                room.announcement(), String.join("、", room.members()), request.message());
+        return java.util.Map.of("reply", reply);
     }
 
     private void requireMember(Long roomId, Authentication authentication) {

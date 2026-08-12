@@ -42,6 +42,8 @@ export default function RoomPage() {
   const [mentionList, setMentionList] = useState([])
   const [mentionToast, setMentionToast] = useState(null)
   const [immersive, setImmersive] = useState(false)
+  const [tutorMode, setTutorMode] = useState(false)
+  const [tutorBusy, setTutorBusy] = useState(false)
   const inputRef = useRef(null)
   const autoActionRef = useRef(false)
   const [online, setOnline] = useState(0)
@@ -57,7 +59,9 @@ export default function RoomPage() {
     announcement: '',
     password: '',
     focusMinutes: '',
-    breakMinutes: ''
+    breakMinutes: '',
+    aiTutorEnabled: false,
+    tutorPersona: ''
   })
   const [editClearPassword, setEditClearPassword] = useState(false)
   const [showTransfer, setShowTransfer] = useState(false)
@@ -273,7 +277,9 @@ export default function RoomPage() {
           announcement: editForm.announcement,
           password: editClearPassword ? '' : editForm.password || null,
           focusMinutes: editForm.focusMinutes ? Number(editForm.focusMinutes) : 0,
-          breakMinutes: editForm.breakMinutes ? Number(editForm.breakMinutes) : 0
+          breakMinutes: editForm.breakMinutes ? Number(editForm.breakMinutes) : 0,
+          aiTutorEnabled: editForm.aiTutorEnabled,
+          tutorPersona: editForm.tutorPersona
         }
       })
       setShowEdit(false)
@@ -467,9 +473,32 @@ export default function RoomPage() {
     if (!content) {
       return
     }
-    send(content)
+    if (tutorMode) {
+      sendTutor(content)
+    } else {
+      send(content)
+    }
     setInput('')
     setMentionOpen(false)
+  }
+
+  async function sendTutor(content) {
+    setTutorBusy(true)
+    setError('')
+    try {
+      const data = await api(`/api/rooms/${id}/tutor`, {
+        method: 'POST',
+        body: { message: content }
+      })
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now(), username: '🤖 助教', content: data.reply }
+      ])
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setTutorBusy(false)
+    }
   }
 
   function onInputChange(value) {
@@ -582,7 +611,9 @@ export default function RoomPage() {
                       announcement: room.announcement || '',
                       password: '',
                       focusMinutes: room.focusMinutes || '',
-                      breakMinutes: room.breakMinutes || ''
+                      breakMinutes: room.breakMinutes || '',
+                      aiTutorEnabled: room.aiTutorEnabled,
+                      tutorPersona: room.tutorPersona || ''
                     })
                     setEditClearPassword(false)
                     setShowEdit(true)
@@ -717,7 +748,25 @@ export default function RoomPage() {
         </div>
 
         <div className="card">
-          <h3>房间聊天</h3>
+          <div className="row-between">
+            <h3>房间聊天</h3>
+            {room.aiTutorEnabled && (
+              <div className="category-chips">
+                <button
+                  className={`chip-btn ${!tutorMode ? 'active' : ''}`}
+                  onClick={() => setTutorMode(false)}
+                >
+                  成员
+                </button>
+                <button
+                  className={`chip-btn ${tutorMode ? 'active' : ''}`}
+                  onClick={() => setTutorMode(true)}
+                >
+                  🤖 助教
+                </button>
+              </div>
+            )}
+          </div>
           {mentionToast && (
             <div className="mention-toast" onClick={() => setMentionToast(null)}>
               <strong>{mentionToast.fromUsername}</strong> 在「{mentionToast.roomName || '房间'}
@@ -775,12 +824,18 @@ export default function RoomPage() {
               <form className="inline-form" onSubmit={sendMessage}>
                 <input
                   ref={inputRef}
-                  placeholder="说点什么... 输入 @ 可以提醒成员"
+                  placeholder={
+                    tutorMode
+                      ? '向 AI 助教提问...'
+                      : '说点什么... 输入 @ 可以提醒成员'
+                  }
                   value={input}
                   onChange={(e) => onInputChange(e.target.value)}
                   maxLength={1000}
                 />
-                <button disabled={!input.trim()}>发送</button>
+                <button disabled={!input.trim() || tutorBusy}>
+                  {tutorBusy ? '思考中...' : '发送'}
+                </button>
               </form>
             </div>
           )}
@@ -940,6 +995,25 @@ export default function RoomPage() {
                 onChange={(e) => setEditForm({ ...editForm, breakMinutes: e.target.value })}
               />
             </label>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={editForm.aiTutorEnabled}
+                onChange={(e) => setEditForm({ ...editForm, aiTutorEnabled: e.target.checked })}
+              />
+              开启 AI 房间助教（成员可以在聊天里 @ 助教提问）
+            </label>
+            {editForm.aiTutorEnabled && (
+              <label>
+                助教人设（可选，如：耐心的高数助教，喜欢举例）
+                <textarea
+                  value={editForm.tutorPersona}
+                  onChange={(e) => setEditForm({ ...editForm, tutorPersona: e.target.value })}
+                  maxLength={200}
+                  rows={2}
+                />
+              </label>
+            )}
             <label className="checkbox-label">
               <input
                 type="checkbox"

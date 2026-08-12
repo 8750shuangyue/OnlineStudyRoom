@@ -19,5 +19,10 @@ public record RoomRequest(
 
         Integer focusMinutes,
 
-        Integer breakMinutes) {
+        Integer breakMinutes,
+
+        Boolean aiTutorEnabled,
+
+        @Size(max = 200, message = "助教人设不能超过 200 字")
+        String tutorPersona) {
 }

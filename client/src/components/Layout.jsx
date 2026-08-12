@@ -85,6 +85,9 @@ export default function Layout() {
         <NavLink to="/mistakes" className={({ isActive }) => (isActive ? 'active' : '')}>
           错题
         </NavLink>
+        <NavLink to="/cards" className={({ isActive }) => (isActive ? 'active' : '')}>
+          复习
+        </NavLink>
         <NavLink to="/stats" className={({ isActive }) => (isActive ? 'active' : '')}>
           我的统计
         </NavLink>

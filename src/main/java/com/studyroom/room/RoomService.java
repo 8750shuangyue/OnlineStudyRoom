@@ -38,6 +38,8 @@ public class RoomService {
         room.setAnnouncement(trimToNull(request.announcement()));
         room.setFocusMinutes(normalizeMinutes(request.focusMinutes(), 180));
         room.setBreakMinutes(normalizeMinutes(request.breakMinutes(), 60));
+        room.setAiTutorEnabled(Boolean.TRUE.equals(request.aiTutorEnabled()));
+        room.setTutorPersona(trimToNull(request.tutorPersona()));
         room.setOwner(owner);
         room.setCreatedAt(LocalDateTime.now());
         room = roomRepository.save(room);
@@ -84,7 +86,8 @@ public class RoomService {
                 room.getAnnouncement(), room.getPassword() != null, room.getOwner().getUsername(),
                 members.size(), room.getCreatedAt(), members,
                 room.getFocusMinutes() == null ? 0 : room.getFocusMinutes(),
-                room.getBreakMinutes() == null ? 0 : room.getBreakMinutes());
+                room.getBreakMinutes() == null ? 0 : room.getBreakMinutes(),
+                room.isAiTutorEnabled(), room.getTutorPersona());
     }
 
     @Transactional
@@ -137,6 +140,8 @@ public class RoomService {
         room.setAnnouncement(trimToNull(request.announcement()));
         room.setFocusMinutes(normalizeMinutes(request.focusMinutes(), 180));
         room.setBreakMinutes(normalizeMinutes(request.breakMinutes(), 60));
+        room.setAiTutorEnabled(Boolean.TRUE.equals(request.aiTutorEnabled()));
+        room.setTutorPersona(trimToNull(request.tutorPersona()));
         if (request.password() != null) {
             // 空字符串 = 清除密码；非空 = 设置新密码
             room.setPassword(trimToNull(request.password()));

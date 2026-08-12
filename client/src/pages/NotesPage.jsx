@@ -27,6 +27,8 @@ export default function NotesPage() {
   const [editing, setEditing] = useState(null)
   const [editForm, setEditForm] = useState(EMPTY_FORM)
   const [error, setError] = useState('')
+  const [aiModal, setAiModal] = useState(null)
+  const [aiBusy, setAiBusy] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -116,6 +118,24 @@ export default function NotesPage() {
       URL.revokeObjectURL(url)
     } catch (err) {
       setError(err.message)
+    }
+  }
+
+  async function aiOrganize(note) {
+    setError('')
+    setAiBusy(true)
+    setAiModal({ note, summary: '', cards: [] })
+    try {
+      const [sum, cards] = await Promise.all([
+        api(`/api/ai/notes/${note.id}/summarize`, { method: 'POST' }),
+        api(`/api/ai/notes/${note.id}/cards`, { method: 'POST' })
+      ])
+      setAiModal({ note, summary: sum.summary, cards: cards.cards || [] })
+    } catch (err) {
+      setAiModal(null)
+      setError(err.message)
+    } finally {
+      setAiBusy(false)
     }
   }
 
@@ -222,6 +242,13 @@ export default function NotesPage() {
                   <button className="btn tiny secondary" onClick={() => fillEdit(note)}>
                     编辑
                   </button>
+                  <button
+                    className="btn tiny secondary"
+                    onClick={() => aiOrganize(note)}
+                    disabled={aiBusy}
+                  >
+                    ✨ AI 整理
+                  </button>
                   <button className="btn tiny danger ghost" onClick={() => removeNote(note)}>
                     删除
                   </button>
@@ -275,6 +302,72 @@ export default function NotesPage() {
               <button disabled={!editForm.content.trim()}>保存</button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {aiModal && (
+        <Modal title={`✨ AI 整理：${aiModal.note.title || '未命名笔记'}`} onClose={() => setAiModal(null)}>
+          <div className="modal-form">
+            {aiBusy && <p className="muted">AI 正在整理...</p>}
+            {aiModal.summary && (
+              <>
+                <h4>📝 摘要</h4>
+                <div className="md">
+                  <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                    {aiModal.summary}
+                  </ReactMarkdown>
+                </div>
+              </>
+            )}
+            {aiModal.cards.length > 0 && (
+              <>
+                <h4>🃏 知识点卡片</h4>
+                <div className="card-grid">
+                  {aiModal.cards.map((card, i) => (
+                    <div className="note-card card" key={i}>
+                      <div className="flashcard-front">{card.front}</div>
+                      <details>
+                        <summary>查看背面</summary>
+                        <div className="flashcard-back">{card.back}</div>
+                      </details>
+                      <div className="row note-meta">
+                        <button
+                          className="btn tiny"
+                          disabled={card.added}
+                          onClick={async () => {
+                            try {
+                              await api('/api/cards', {
+                                method: 'POST',
+                                body: {
+                                  front: card.front,
+                                  back: card.back,
+                                  sourceType: 'NOTE',
+                                  sourceId: aiModal.note.id
+                                }
+                              })
+                              setAiModal((m) => ({
+                                ...m,
+                                cards: m.cards.map((c, ci) => (ci === i ? { ...c, added: true } : c))
+                              }))
+                            } catch (err) {
+                              setError(err.message)
+                            }
+                          }}
+                        >
+                          {card.added ? '✓ 已加入' : '➕ 加入复习'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            <div className="modal-actions">
+              <button className="btn secondary" onClick={() => setAiModal(null)}>
+                关闭
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>

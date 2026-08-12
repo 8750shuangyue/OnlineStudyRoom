@@ -15,6 +15,8 @@ export default function MistakePage() {
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [reviewing, setReviewing] = useState(null)
+  const [variation, setVariation] = useState(null)
+  const [variationBusy, setVariationBusy] = useState(false)
   const [explaining, setExplaining] = useState({})
   const [loadingExplain, setLoadingExplain] = useState({})
   const [error, setError] = useState('')
@@ -99,6 +101,19 @@ export default function MistakePage() {
     }
   }
 
+  async function fetchVariation(mistake) {
+    setError('')
+    setVariationBusy(true)
+    try {
+      const data = await api(`/api/ai/mistakes/${mistake.id}/variation`, { method: 'POST' })
+      setVariation(data)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setVariationBusy(false)
+    }
+  }
+
   function statusChip(m) {
     if (m.reviewStatus === 'MASTERED') {
       return <span className="mini-chip ok-chip">✓ 已掌握</span>
@@ -172,6 +187,13 @@ export default function MistakePage() {
                   disabled={m.reviewStatus === 'MASTERED'}
                 >
                   🔁 复习
+                </button>
+                <button
+                  className="btn tiny secondary"
+                  onClick={() => fetchVariation(m)}
+                  disabled={variationBusy}
+                >
+                  {variationBusy ? '生成中...' : '🔀 变式题'}
                 </button>
                 <button
                   className="btn tiny secondary"
@@ -264,6 +286,23 @@ export default function MistakePage() {
               </button>
               <button className="btn" onClick={() => submitReview(true)}>
                 掌握了
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {variation && (
+        <Modal title="变式题" onClose={() => setVariation(null)}>
+          <div className="modal-form">
+            <div className="mistake-question">{variation.question}</div>
+            <details className="variation-answer">
+              <summary>查看答案与解析</summary>
+              <div className="mistake-note">{variation.answer}</div>
+            </details>
+            <div className="modal-actions">
+              <button className="btn secondary" onClick={() => setVariation(null)}>
+                关闭
               </button>
             </div>
           </div>

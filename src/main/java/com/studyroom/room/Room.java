@@ -52,6 +52,14 @@ public class Room {
     /** 房间默认休息时长（分钟），0 = 成员用自己的设置 */
     private Integer breakMinutes = 0;
 
+    /** 是否开启 AI 房间助教 */
+    @Column(nullable = false)
+    private boolean aiTutorEnabled = false;
+
+    /** 助教人设（提示词） */
+    @Column(length = 200)
+    private String tutorPersona;
+
     public Long getId() {
         return id;
     }
@@ -126,5 +134,21 @@ public class Room {
 
     public void setBreakMinutes(Integer breakMinutes) {
         this.breakMinutes = breakMinutes;
+    }
+
+    public boolean isAiTutorEnabled() {
+        return aiTutorEnabled;
+    }
+
+    public void setAiTutorEnabled(boolean aiTutorEnabled) {
+        this.aiTutorEnabled = aiTutorEnabled;
+    }
+
+    public String getTutorPersona() {
+        return tutorPersona;
+    }
+
+    public void setTutorPersona(String tutorPersona) {
+        this.tutorPersona = tutorPersona;
     }
 }

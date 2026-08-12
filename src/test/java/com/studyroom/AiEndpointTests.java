@@ -109,7 +109,7 @@ class AiEndpointTests {
                         .content("{\"question\":\"什么是导数？\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.answer").value("模拟回答"))
-                .andExpect(jsonPath("$.sources[0]").value("笔记.txt"));
+                .andExpect(jsonPath("$.sources[0].name").value("笔记.txt"));
 
         // 番茄总结（建房间 + 会话满 15 分钟）
         String roomJson = mockMvc.perform(post("/api/rooms")

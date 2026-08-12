@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { api } from '../api.js'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
@@ -68,6 +68,13 @@ export default function ChatPage() {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [memoryMsg, setMemoryMsg] = useState('')
+  const [listening, setListening] = useState(false)
+  const recognitionRef = useRef(null)
+
+  const hasSpeech =
+    typeof window !== 'undefined' &&
+    Boolean(window.SpeechRecognition || window.webkitSpeechRecognition)
 
   async function submit(e) {
     e.preventDefault()
@@ -80,10 +87,9 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, { role: 'user', content }])
     setInput('')
     try {
-      const data = await api('/api/chat', {
+      const data = await api('/api/ai/chat', {
         method: 'POST',
-        body: { message: content },
-        auth: false
+        body: { message: content }
       })
       setMessages((prev) => [...prev, { role: 'assistant', content: data.reply }])
     } catch (err) {
@@ -93,9 +99,53 @@ export default function ChatPage() {
     }
   }
 
+  async function clearMemory() {
+    setError('')
+    setMemoryMsg('')
+    try {
+      await api('/api/ai/clear-memory', { method: 'POST', body: { sessionKey: 'chat' } })
+      setMemoryMsg('已清空对话记忆')
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  function toggleVoice() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SR) {
+      return
+    }
+    if (listening) {
+      recognitionRef.current?.stop()
+      setListening(false)
+      return
+    }
+    const rec = new SR()
+    rec.lang = 'zh-CN'
+    rec.interimResults = false
+    rec.onresult = (e) => {
+      const text = Array.from(e.results)
+        .map((r) => r[0].transcript)
+        .join('')
+      setInput((prev) => (prev ? `${prev}${text}` : text))
+      setListening(false)
+    }
+    rec.onend = () => setListening(false)
+    rec.onerror = () => setListening(false)
+    recognitionRef.current = rec
+    rec.start()
+    setListening(true)
+  }
+
   return (
     <div className="chat-page">
-      <h2>AI 学习助手</h2>
+      <div className="row-between">
+        <h2>AI 学习助手</h2>
+        <button className="btn tiny secondary" onClick={clearMemory}>
+          清空记忆
+        </button>
+      </div>
+      {memoryMsg && <p className="ok">{memoryMsg}</p>}
       {error && <p className="error">{error}</p>}
       <div className="card chat-list ai-chat">
         {messages.length === 0 && (
@@ -124,6 +174,17 @@ export default function ChatPage() {
           onChange={(e) => setInput(e.target.value)}
           maxLength={2000}
         />
+        {hasSpeech && (
+          <button
+            type="button"
+            className={`btn secondary mic-btn ${listening ? 'mic-active' : ''}`}
+            onClick={toggleVoice}
+            title={listening ? '停止录音' : '语音输入'}
+            disabled={busy}
+          >
+            {listening ? '⏹ 聆听中' : '🎤 语音'}
+          </button>
+        )}
         <button disabled={!input.trim() || busy}>发送</button>
       </form>
       <StudyPlanCard />

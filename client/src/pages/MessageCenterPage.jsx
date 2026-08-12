@@ -19,6 +19,8 @@ export default function MessageCenterPage() {
   const [invites, setInvites] = useState([])
   const [friendRequests, setFriendRequests] = useState([])
   const [unreadRooms, setUnreadRooms] = useState([])
+  const [briefs, setBriefs] = useState([])
+  const [briefBusy, setBriefBusy] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -31,6 +33,7 @@ export default function MessageCenterPage() {
         api('/api/rooms/unread')
       ])
       setMentions(m)
+      setBriefs(m.filter((n) => n.type === 'DAILY_BRIEF'))
       setInvites(inv)
       setFriendRequests(fr)
       setUnreadRooms(ur)
@@ -98,10 +101,47 @@ export default function MessageCenterPage() {
     }
   }
 
+  async function generateBrief() {
+    setBriefBusy(true)
+    setError('')
+    try {
+      await api('/api/ai/daily-brief', { method: 'POST' })
+      await load()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBriefBusy(false)
+    }
+  }
+
   return (
     <div>
       <h2>消息中心</h2>
       {error && <p className="error">{error}</p>}
+
+      <div className="card">
+        <div className="row-between">
+          <h3>📋 每日简报</h3>
+          <button className="btn tiny secondary" onClick={generateBrief} disabled={briefBusy}>
+            {briefBusy ? '生成中...' : '生成今日简报'}
+          </button>
+        </div>
+        {briefs.length === 0 ? (
+          <p className="muted">还没有简报，点「生成今日简报」让 AI 帮你复盘昨天、规划今天。</p>
+        ) : (
+          <div className="msg-list">
+            {briefs.slice(0, 3).map((b) => (
+              <div className="msg-item" key={b.id}>
+                <div className="msg-title">
+                  📋 {b.title}
+                  <span className="msg-time">{formatTime(b.createdAt)}</span>
+                </div>
+                <div className="msg-body">{b.body}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       <div className="card">
         <div className="row-between">

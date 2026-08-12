@@ -3022,6 +3022,103 @@ button.link-btn:hover {
   color: #94a3b8;
 }
 
+.citation-chip {
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.citation-chip:hover {
+  transform: translateY(-1px);
+  background: rgba(34, 211, 238, 0.2);
+}
+
+.citation-snippet {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 3px solid #22d3ee;
+  background: rgba(34, 211, 238, 0.08);
+  border-radius: 8px;
+  color: #cbd5e1;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.variation-answer {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+}
+
+.variation-answer summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: #c4b5fd;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.flashcard-front {
+  font-weight: 700;
+  color: #eef1f9;
+  margin-bottom: 8px;
+}
+
+.flashcard-back {
+  margin-top: 8px;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.review-stage {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.flashcard-review {
+  min-height: 180px;
+  margin: 14px auto;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 24px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, rgba(99, 102, 241, 0.16), rgba(34, 211, 238, 0.1));
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: fadeUp 0.3s ease both;
+}
+
+.flashcard-review:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(99, 102, 241, 0.25);
+}
+
+.flashcard-face {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.7;
+  color: #eef1f9;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+[data-theme='light'] .flashcard-face {
+  color: #0f172a;
+}
+
 /* ============ 个人主页 ============ */
 .profile-head {
   display: flex;
@@ -3449,6 +3546,16 @@ textarea {
   color: #fff;
   background: linear-gradient(135deg, #6366f1, #a855f7);
   flex-shrink: 0;
+}
+
+.mic-btn {
+  flex-shrink: 0;
+}
+
+.mic-active {
+  border-color: rgba(244, 63, 94, 0.6) !important;
+  color: #fda4af !important;
+  animation: pulseBadge 1.2s ease-in-out infinite;
 }
 
 .focus-badge {

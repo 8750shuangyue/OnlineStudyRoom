@@ -13,6 +13,7 @@ const TasksPage = lazy(() => import('./pages/TasksPage.jsx'))
 const StatsPage = lazy(() => import('./pages/StatsPage.jsx'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'))
+const FlashcardsPage = lazy(() => import('./pages/FlashcardsPage.jsx'))
 const ChatPage = lazy(() => import('./pages/ChatPage.jsx'))
 const RoomPage = lazy(() => import('./pages/RoomPage.jsx'))
 const RagPage = lazy(() => import('./pages/RagPage.jsx'))
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="stats" element={<StatsPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="users/:username" element={<ProfilePage />} />
+          <Route path="cards" element={<FlashcardsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

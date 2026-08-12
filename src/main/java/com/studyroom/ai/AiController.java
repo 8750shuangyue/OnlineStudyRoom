@@ -2,6 +2,8 @@ package com.studyroom.ai;
 
 import com.studyroom.mistake.Mistake;
 import com.studyroom.mistake.MistakeRepository;
+import com.studyroom.note.Note;
+import com.studyroom.note.NoteRepository;
 import com.studyroom.study.StudySession;
 import com.studyroom.study.StudySessionRepository;
 import com.studyroom.user.User;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -33,18 +36,39 @@ public class AiController {
     private final StudySessionRepository studySessionRepository;
     private final UserRepository userRepository;
     private final MistakeRepository mistakeRepository;
+    private final NoteRepository noteRepository;
+    private final AiBriefService aiBriefService;
     private final ChatClient chatClient;
 
     public AiController(AiService aiService,
                         StudySessionRepository studySessionRepository,
                         UserRepository userRepository,
                         MistakeRepository mistakeRepository,
+                        NoteRepository noteRepository,
+                        AiBriefService aiBriefService,
                         ChatClient.Builder builder) {
         this.aiService = aiService;
         this.studySessionRepository = studySessionRepository;
         this.userRepository = userRepository;
         this.mistakeRepository = mistakeRepository;
+        this.noteRepository = noteRepository;
+        this.aiBriefService = aiBriefService;
         this.chatClient = builder.build();
+    }
+
+    private Note ownedNote(Long id, Authentication authentication) {
+        User user = currentUser(authentication);
+        Note note = noteRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "笔记不存在"));
+        if (!note.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只能操作自己的笔记");
+        }
+        return note;
+    }
+
+    private User currentUser(Authentication authentication) {
+        return userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
     }
 
     /** 普通对话：返回完整回复。 */
@@ -96,6 +120,25 @@ public class AiController {
     }
 
     /** 错题 AI 讲解。 */
+    @PostMapping("/chat")
+    public ChatResponse chatMemory(@Valid @RequestBody ChatRequest request,
+                                   Authentication authentication) {
+        return new ChatResponse(aiService.chatWithMemory(currentUser(authentication), request.message()));
+    }
+
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> chatMemoryStream(@Valid @RequestBody ChatRequest request,
+                                         Authentication authentication) {
+        return aiService.chatStreamWithMemory(currentUser(authentication), request.message());
+    }
+
+    @PostMapping("/clear-memory")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void clearMemory(@Valid @RequestBody ClearMemoryRequest request,
+                            Authentication authentication) {
+        aiService.clearMemory(currentUser(authentication), request.sessionKey());
+    }
+
     @PostMapping("/mistakes/{id}/explain")
     public Map<String, String> explainMistake(@PathVariable Long id, Authentication authentication) {
         User user = userRepository.findByUsername(authentication.getName())
@@ -106,6 +149,42 @@ public class AiController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只能讲解自己的错题");
         }
         return Map.of("explanation", aiService.explainMistake(mistake));
+    }
+
+    /** 错题变式题。 */
+    @PostMapping("/mistakes/{id}/variation")
+    public VariationResponse variation(@PathVariable Long id, Authentication authentication) {
+        User user = currentUser(authentication);
+        Mistake mistake = mistakeRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "错题不存在"));
+        if (!mistake.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只能操作自己的错题");
+        }
+        return aiService.generateVariation(mistake);
+    }
+
+    /** 笔记 AI 摘要。 */
+    @PostMapping("/notes/{id}/summarize")
+    public Map<String, String> summarizeNote(@PathVariable Long id, Authentication authentication) {
+        return Map.of("summary", aiService.summarizeNote(ownedNote(id, authentication)));
+    }
+
+    /** 笔记生成知识点卡片。 */
+    @PostMapping("/notes/{id}/cards")
+    public Map<String, Object> noteCards(@PathVariable Long id, Authentication authentication) {
+        return Map.of("cards", aiService.generateNoteCards(ownedNote(id, authentication)));
+    }
+
+    /** 生成并保存今日学习简报。 */
+    @PostMapping("/daily-brief")
+    public Map<String, String> dailyBrief(Authentication authentication) {
+        return Map.of("brief", aiBriefService.dailyBrief(currentUser(authentication)));
+    }
+
+    /** 生成周度学习报告（Markdown）。 */
+    @PostMapping("/weekly-report")
+    public Map<String, String> weeklyReport(Authentication authentication) {
+        return Map.of("report", aiBriefService.weeklyReport(currentUser(authentication)));
     }
 
     /** AI 学习计划生成。 */

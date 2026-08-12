@@ -11,10 +11,12 @@ export default function RagPage() {
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
   const [sources, setSources] = useState([])
+  const [citation, setCitation] = useState(null)
   const [editingDoc, setEditingDoc] = useState(null)
   const [editForm, setEditForm] = useState({ name: '', category: '' })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [memoryMsg, setMemoryMsg] = useState('')
 
   const load = useCallback(async () => {
     try {
@@ -101,6 +103,16 @@ export default function RagPage() {
     }
   }
 
+  async function clearMemory() {
+    setError('')
+    try {
+      await api('/api/ai/clear-memory', { method: 'POST', body: { sessionKey: 'rag' } })
+      setMemoryMsg('已清空资料问答记忆')
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   return (
     <div>
       <h2>资料问答</h2>
@@ -151,6 +163,13 @@ export default function RagPage() {
 
       <div className="card">
         <h3>💬 基于资料提问</h3>
+        <div className="row-between">
+          <p className="muted">支持连续追问（会记住对话上下文）</p>
+          <button className="btn tiny secondary" onClick={clearMemory}>
+            清空记忆
+          </button>
+        </div>
+        {memoryMsg && <p className="ok">{memoryMsg}</p>}
         <form className="inline-form" onSubmit={ask}>
           <input
             placeholder="例如：导数的定义是什么？"
@@ -166,8 +185,13 @@ export default function RagPage() {
               <div className="rag-sources">
                 <span>引用来源：</span>
                 {sources.map((s) => (
-                  <span className="tag-chip" key={s}>
-                    📄 {s}
+                  <span
+                    className="tag-chip citation-chip"
+                    key={s.documentId}
+                    onClick={() => setCitation(s)}
+                    title="查看原文片段"
+                  >
+                    📄 {s.name}
                   </span>
                 ))}
               </div>
@@ -205,6 +229,19 @@ export default function RagPage() {
               <button disabled={!editForm.name.trim()}>保存</button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {citation && (
+        <Modal title={`引用来源：${citation.name}`} onClose={() => setCitation(null)}>
+          <div className="modal-form">
+            <blockquote className="citation-snippet">{citation.snippet}</blockquote>
+            <div className="modal-actions">
+              <button className="btn secondary" onClick={() => setCitation(null)}>
+                关闭
+              </button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>

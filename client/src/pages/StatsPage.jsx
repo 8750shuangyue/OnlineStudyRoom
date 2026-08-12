@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '../api.js'
 import { getToken } from '../api.js'
+import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
+import 'katex/dist/katex.min.css'
 
 function formatMinutes(seconds) {
   return Math.floor(seconds / 60)
@@ -48,6 +52,8 @@ export default function StatsPage() {
   const [heatmap, setHeatmap] = useState([])
   const [timeBuckets, setTimeBuckets] = useState([])
   const [error, setError] = useState('')
+  const [weeklyReport, setWeeklyReport] = useState('')
+  const [weeklyBusy, setWeeklyBusy] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -106,6 +112,26 @@ export default function StatsPage() {
       URL.revokeObjectURL(url)
     } catch (err) {
       setError(err.message)
+    }
+  }
+
+  async function generateWeekly() {
+    setWeeklyBusy(true)
+    setError('')
+    try {
+      const data = await api('/api/ai/weekly-report', { method: 'POST' })
+      setWeeklyReport(data.report)
+      const blob = new Blob([data.report], { type: 'text/markdown;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'weekly-report.md'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setWeeklyBusy(false)
     }
   }
 
@@ -168,9 +194,14 @@ export default function StatsPage() {
     <div>
       <div className="row-between">
         <h2>我的学习看板</h2>
-        <button className="btn secondary" onClick={exportCsv}>
-          ⬇ 导出 CSV
-        </button>
+        <div className="row">
+          <button className="btn secondary" onClick={generateWeekly} disabled={weeklyBusy}>
+            {weeklyBusy ? '生成中...' : '📄 生成周报'}
+          </button>
+          <button className="btn secondary" onClick={exportCsv}>
+            ⬇ 导出 CSV
+          </button>
+        </div>
       </div>
       {error && <p className="error">{error}</p>}
       {!stats && !error && <p className="muted">加载中...</p>}
@@ -322,6 +353,17 @@ export default function StatsPage() {
                   />
                   <button disabled={!goalInput}>设置目标</button>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {weeklyReport && (
+            <div className="card">
+              <h3>📄 本周学习报告</h3>
+              <div className="md">
+                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {weeklyReport}
+                </ReactMarkdown>
               </div>
             </div>
           )}

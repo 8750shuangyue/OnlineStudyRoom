@@ -14,5 +14,7 @@ public record RoomDetailResponse(
         LocalDateTime createdAt,
         List<String> members,
         int focusMinutes,
-        int breakMinutes) {
+        int breakMinutes,
+        boolean aiTutorEnabled,
+        String tutorPersona) {
 }
