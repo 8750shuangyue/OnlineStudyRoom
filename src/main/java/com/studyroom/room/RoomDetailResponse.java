@@ -16,5 +16,6 @@ public record RoomDetailResponse(
         int focusMinutes,
         int breakMinutes,
         boolean aiTutorEnabled,
-        String tutorPersona) {
+        String tutorPersona,
+        int weeklyGoalMinutes) {
 }

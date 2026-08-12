@@ -5,6 +5,7 @@ import com.studyroom.realtime.ChatService;
 import com.studyroom.realtime.PresenceService;
 import com.studyroom.realtime.UnreadResponse;
 import com.studyroom.ai.AiService;
+import com.studyroom.stats.StatsService;
 import com.studyroom.study.FocusEntry;
 import com.studyroom.study.StudyService;
 import com.studyroom.user.User;
@@ -60,19 +61,22 @@ public class RoomController {
     private final ChatService chatService;
     private final StudyService studyService;
     private final AiService aiService;
+    private final StatsService statsService;
 
     public RoomController(RoomService roomService,
                           UserRepository userRepository,
                           PresenceService presenceService,
                           ChatService chatService,
                           StudyService studyService,
-                          AiService aiService) {
+                          AiService aiService,
+                          StatsService statsService) {
         this.roomService = roomService;
         this.userRepository = userRepository;
         this.presenceService = presenceService;
         this.chatService = chatService;
         this.studyService = studyService;
         this.aiService = aiService;
+        this.statsService = statsService;
     }
 
     @PostMapping
@@ -101,6 +105,12 @@ public class RoomController {
     @Transactional(readOnly = true)
     public List<UnreadResponse> unread(Authentication authentication) {
         return chatService.unreadCounts(currentUser(authentication).getId());
+    }
+
+    /** 为你推荐：公开且未加入的房间。 */
+    @GetMapping("/recommended")
+    public List<RoomResponse> recommended(Authentication authentication) {
+        return roomService.recommendedRooms(currentUser(authentication));
     }
 
     @GetMapping("/{id}")
@@ -138,6 +148,21 @@ public class RoomController {
     @Transactional(readOnly = true)
     public List<FocusEntry> focusStatus(@PathVariable Long roomId) {
         return studyService.roomFocusStatus(roomId);
+    }
+
+    /** 本周房间挑战进度。 */
+    @GetMapping("/{id}/challenge")
+    public ChallengeResponse challenge(@PathVariable Long id) {
+        RoomDetailResponse room = roomService.getRoomDetail(id);
+        int goal = room.weeklyGoalMinutes();
+        int total = 0;
+        if (goal > 0) {
+            total = statsService.roomLeaderboard(id, "week", "duration").stream()
+                    .mapToInt(e -> e.value() == null ? 0 : e.value().intValue())
+                    .sum();
+        }
+        int progress = goal > 0 ? Math.min(100, (int) Math.round(total * 100.0 / goal)) : 0;
+        return new ChallengeResponse(goal, total, progress, goal > 0 && total >= goal);
     }
 
     @PostMapping("/{id}/join")

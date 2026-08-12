@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api.js'
+import { useAuth } from '../auth.jsx'
 
 const BADGE_ICONS = {
   FIRST_FOCUS: '🐣',
@@ -33,7 +34,85 @@ const BADGE_COLORS = {
 
 const CONFETTI_COLORS = ['#fbbf24', '#f472b6', '#22d3ee', '#a78bfa', '#34d399', '#60a5fa']
 
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+}
+
+function downloadShareCard(stats, username, badges) {
+  const w = 640
+  const h = 900
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+  const grad = ctx.createLinearGradient(0, 0, w, h)
+  grad.addColorStop(0, '#1e1b4b')
+  grad.addColorStop(0.5, '#4c1d95')
+  grad.addColorStop(1, '#155e75')
+  ctx.fillStyle = grad
+  ctx.fillRect(0, 0, w, h)
+  ctx.fillStyle = 'rgba(255,255,255,0.06)'
+  ctx.beginPath()
+  ctx.arc(560, 120, 160, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.beginPath()
+  ctx.arc(60, 820, 140, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.textAlign = 'center'
+  ctx.fillStyle = '#fff'
+  ctx.font = 'bold 42px "Microsoft YaHei", sans-serif'
+  ctx.fillText('✦ 我的自习室成就 ✦', w / 2, 110)
+  ctx.font = '26px "Microsoft YaHei", sans-serif'
+  ctx.fillStyle = '#c4b5fd'
+  ctx.fillText(username || '自习室用户', w / 2, 158)
+
+  const cardY = 210
+  const cardH = 300
+  ctx.fillStyle = 'rgba(255,255,255,0.08)'
+  roundRect(ctx, 40, cardY, w - 80, cardH, 24)
+  ctx.fill()
+  ctx.fillStyle = '#67e8f9'
+  ctx.font = 'bold 64px sans-serif'
+  ctx.fillText(`Lv.${stats.level}`, w / 2, cardY + 92)
+  ctx.fillStyle = '#94a3b8'
+  ctx.font = '20px "Microsoft YaHei", sans-serif'
+  ctx.fillText(`${stats.xp} XP`, w / 2, cardY + 132)
+  ctx.fillStyle = '#fbbf24'
+  ctx.font = 'bold 34px sans-serif'
+  ctx.fillText(`🔥 连续 ${stats.streak} 天`, w / 2, cardY + 202)
+  ctx.fillStyle = '#e6e9f2'
+  ctx.font = '22px "Microsoft YaHei", sans-serif'
+  ctx.fillText(`累计 ${stats.totalMinutes} 分钟 · ${stats.totalSessions} 次`, w / 2, cardY + 252)
+
+  const earned = badges.filter((b) => b.earned)
+  ctx.fillStyle = '#fff'
+  ctx.font = '20px "Microsoft YaHei", sans-serif'
+  ctx.fillText(`🏅 徽章 ${earned.length}/${badges.length}`, w / 2, cardY + 300)
+  const emojis = earned.slice(0, 8).map((b) => BADGE_ICONS[b.code] || '🏅')
+  ctx.font = '42px sans-serif'
+  const startX = w / 2 - (emojis.length - 1) * 28
+  emojis.forEach((e, i) => ctx.fillText(e, startX + i * 56, cardY + cardH + 48))
+
+  ctx.fillStyle = '#94a3b8'
+  ctx.font = '18px "Microsoft YaHei", sans-serif'
+  ctx.fillText('— 来自网页版自习室 —', w / 2, h - 48)
+
+  const url = canvas.toDataURL('image/png')
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'achievement-card.png'
+  a.click()
+}
+
 export default function AchievementsPage() {
+  const { user } = useAuth()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [simple, setSimple] = useState(() => localStorage.getItem('ach_simple') === '1')
@@ -168,6 +247,12 @@ export default function AchievementsPage() {
         <h2 className="fancy-title">我的成就</h2>
         <div className="row">
           <span className="muted">坚持就有回报 ✨</span>
+          <button
+            className="chip-btn"
+            onClick={() => data?.stats && downloadShareCard(data.stats, user?.username, data.badges)}
+          >
+            🖼 分享成就卡
+          </button>
           <button
             className={`chip-btn mode-toggle ${simple ? 'active' : ''}`}
             onClick={toggleSimple}

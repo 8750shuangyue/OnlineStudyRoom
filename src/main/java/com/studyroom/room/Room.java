@@ -60,6 +60,9 @@ public class Room {
     @Column(length = 200)
     private String tutorPersona;
 
+    /** 本周房间挑战目标（分钟），0 = 未开启 */
+    private Integer weeklyGoalMinutes = 0;
+
     public Long getId() {
         return id;
     }
@@ -150,5 +153,13 @@ public class Room {
 
     public void setTutorPersona(String tutorPersona) {
         this.tutorPersona = tutorPersona;
+    }
+
+    public Integer getWeeklyGoalMinutes() {
+        return weeklyGoalMinutes;
+    }
+
+    public void setWeeklyGoalMinutes(Integer weeklyGoalMinutes) {
+        this.weeklyGoalMinutes = weeklyGoalMinutes;
     }
 }

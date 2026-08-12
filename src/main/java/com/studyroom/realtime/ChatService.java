@@ -131,6 +131,16 @@ public class ChatService {
             hasMore = messageRepository.existsByRoomIdAndIdLessThan(roomId, rows.get(0).getId());
         }
         List<MessageResponse> messages = rows.stream().map(MessageResponse::from).toList();
+        java.util.Map<Long, Integer> readCounts = new java.util.HashMap<>();
+        if (!rows.isEmpty()) {
+            List<Long> ids = rows.stream().map(ChatMessage::getId).toList();
+            for (Object[] row : messageRepository.readCounts(roomId, ids)) {
+                readCounts.put((Long) row[0], ((Number) row[1]).intValue());
+            }
+        }
+        messages = rows.stream()
+                .map(m -> MessageResponse.from(m, readCounts.getOrDefault(m.getId(), 0)))
+                .toList();
         return new ChatPageResponse(messages, hasMore);
     }
 

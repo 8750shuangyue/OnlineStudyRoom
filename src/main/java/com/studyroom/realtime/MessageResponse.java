@@ -9,11 +9,18 @@ public record MessageResponse(
         String username,
         String content,
         LocalDateTime createdAt,
-        List<String> mentions) {
+        List<String> mentions,
+        Integer readCount) {
 
     public static MessageResponse from(ChatMessage message) {
         return new MessageResponse(message.getId(), message.getRoomId(),
                 message.getUsername(), message.getContent(), message.getCreatedAt(),
-                message.getMentions() == null ? List.of() : message.getMentions());
+                message.getMentions() == null ? List.of() : message.getMentions(), null);
+    }
+
+    public static MessageResponse from(ChatMessage message, Integer readCount) {
+        return new MessageResponse(message.getId(), message.getRoomId(),
+                message.getUsername(), message.getContent(), message.getCreatedAt(),
+                message.getMentions() == null ? List.of() : message.getMentions(), readCount);
     }
 }

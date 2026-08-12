@@ -3119,6 +3119,22 @@ button.link-btn:hover {
   color: #0f172a;
 }
 
+.chat-read {
+  align-self: flex-end;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.challenge-card.achieved {
+  border-color: rgba(52, 211, 153, 0.5);
+  box-shadow: 0 0 28px rgba(52, 211, 153, 0.15);
+}
+
+.challenge-card .xp-bar-fill {
+  background: linear-gradient(90deg, #22d3ee, #34d399);
+}
+
 /* ============ 个人主页 ============ */
 .profile-head {
   display: flex;

@@ -13,6 +13,7 @@ export default function RoomsPage() {
   const [rooms, setRooms] = useState([])
   const [mine, setMine] = useState([])
   const [categories, setCategories] = useState([])
+  const [recommended, setRecommended] = useState([])
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
   const [showCreate, setShowCreate] = useState(false)
@@ -31,14 +32,16 @@ export default function RoomsPage() {
       if (search.trim()) params.set('search', search.trim())
       if (category) params.set('category', category)
       const qs = params.toString()
-      const [roomList, myList, cats] = await Promise.all([
+      const [roomList, myList, cats, rec] = await Promise.all([
         api(`/api/rooms${qs ? `?${qs}` : ''}`),
         api('/api/rooms/mine'),
-        api('/api/rooms/categories')
+        api('/api/rooms/categories'),
+        api('/api/rooms/recommended')
       ])
       setRooms(roomList)
       setMine(myList)
       setCategories(cats)
+      setRecommended(rec)
     } catch (err) {
       setError(err.message)
     }
@@ -177,6 +180,26 @@ export default function RoomsPage() {
       </div>
 
       {error && <p className="error">{error}</p>}
+
+      {recommended.length > 0 && (
+        <div className="card">
+          <h3>✨ 为你推荐</h3>
+          <div className="dash-room-list">
+            {recommended.map((room) => (
+              <Link className="dash-room" to={`/rooms/${room.id}`} key={room.id}>
+                <span className="dash-room-name">
+                  {room.name}
+                  {room.hasPassword && <span className="lock-badge">私密</span>}
+                </span>
+                <span className="muted">
+                  {room.category ? `${room.category} · ` : ''}
+                  {room.memberCount} 人
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {rooms.length === 0 ? (
         <div className="empty-state">

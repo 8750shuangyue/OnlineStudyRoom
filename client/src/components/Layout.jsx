@@ -5,12 +5,14 @@ import { useAuth } from '../auth.jsx'
 import { useUnread } from '../useUnread.js'
 import { useMessages } from '../useMessages.js'
 import Onboarding, { shouldShowOnboarding } from './Onboarding.jsx'
+import { useActivityNotifications } from '../useActivityNotifications.js'
 
 export default function Layout() {
   const { user, setUser } = useAuth()
   const navigate = useNavigate()
   const { total } = useUnread()
   const { total: totalMessages } = useMessages()
+  useActivityNotifications()
   const [installPrompt, setInstallPrompt] = useState(null)
   const [installed, setInstalled] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(() => shouldShowOnboarding())

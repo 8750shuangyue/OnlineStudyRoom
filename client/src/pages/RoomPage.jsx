@@ -49,6 +49,7 @@ export default function RoomPage() {
   const [online, setOnline] = useState(0)
   const [leaderboard, setLeaderboard] = useState([])
   const [boardPeriod, setBoardPeriod] = useState('all')
+  const [challenge, setChallenge] = useState(null)
   const [session, setSession] = useState(null)
   const [elapsed, setElapsed] = useState(0)
   const [summary, setSummary] = useState(null)
@@ -61,7 +62,8 @@ export default function RoomPage() {
     focusMinutes: '',
     breakMinutes: '',
     aiTutorEnabled: false,
-    tutorPersona: ''
+    tutorPersona: '',
+    weeklyGoalMinutes: ''
   })
   const [editClearPassword, setEditClearPassword] = useState(false)
   const [showTransfer, setShowTransfer] = useState(false)
@@ -96,13 +98,14 @@ export default function RoomPage() {
 
   const load = useCallback(async () => {
     try {
-      const [roomData, page, onlineData, boardData, active, focusData] = await Promise.all([
+      const [roomData, page, onlineData, boardData, active, focusData, chal] = await Promise.all([
         api(`/api/rooms/${id}`),
         api(`/api/rooms/${id}/messages?limit=50`),
         api(`/api/rooms/${id}/online`),
         api(`/api/rooms/${id}/leaderboard?period=${boardPeriod}`),
         api('/api/sessions/active'),
-        api(`/api/rooms/${id}/focus-status`)
+        api(`/api/rooms/${id}/focus-status`),
+        api(`/api/rooms/${id}/challenge`)
       ])
       setRoom(roomData)
       setMessages(page.messages || [])
@@ -111,6 +114,7 @@ export default function RoomPage() {
       setLeaderboard(boardData)
       setSession(active)
       setFocusMap(Object.fromEntries(focusData.map((f) => [f.username, f])))
+      setChallenge(chal)
       if (roomData.members.includes(user.username)) {
         api(`/api/rooms/${id}/read`, { method: 'POST' }).catch(() => {})
         markRoomRead(id)
@@ -279,7 +283,8 @@ export default function RoomPage() {
           focusMinutes: editForm.focusMinutes ? Number(editForm.focusMinutes) : 0,
           breakMinutes: editForm.breakMinutes ? Number(editForm.breakMinutes) : 0,
           aiTutorEnabled: editForm.aiTutorEnabled,
-          tutorPersona: editForm.tutorPersona
+          tutorPersona: editForm.tutorPersona,
+          weeklyGoalMinutes: editForm.weeklyGoalMinutes ? Number(editForm.weeklyGoalMinutes) : 0
         }
       })
       setShowEdit(false)
@@ -613,7 +618,8 @@ export default function RoomPage() {
                       focusMinutes: room.focusMinutes || '',
                       breakMinutes: room.breakMinutes || '',
                       aiTutorEnabled: room.aiTutorEnabled,
-                      tutorPersona: room.tutorPersona || ''
+                      tutorPersona: room.tutorPersona || '',
+                      weeklyGoalMinutes: room.weeklyGoalMinutes || ''
                     })
                     setEditClearPassword(false)
                     setShowEdit(true)
@@ -801,6 +807,7 @@ export default function RoomPage() {
                 <span className="chat-user">{msg.username}</span>
                 <span className="chat-time">{formatTime(msg.createdAt)}</span>
                 <div className="chat-content">{renderContent(msg.content)}</div>
+                {msg.readCount > 1 && <span className="chat-read">已读 {msg.readCount - 1}</span>}
               </div>
             ))}
           </div>
@@ -843,6 +850,25 @@ export default function RoomPage() {
       </div>
 
       <div className="room-side">
+        {challenge?.goalMinutes > 0 && (
+          <div className={`card challenge-card ${challenge.achieved ? 'achieved' : ''}`}>
+            <div className="row-between">
+              <h3>🏆 本周房间挑战</h3>
+              {challenge.achieved && <span className="mini-chip ok-chip">🎉 已达成</span>}
+            </div>
+            <p className="muted">
+              全员本周已专注 {challenge.totalMinutes} / {challenge.goalMinutes} 分钟
+            </p>
+            <div className="xp-bar">
+              <div
+                className="xp-bar-fill"
+                style={{ width: `${challenge.progressPercent}%` }}
+              />
+            </div>
+            {challenge.achieved && <p className="ok">挑战达成！继续保持势头 💪</p>}
+          </div>
+        )}
+
         <div className="card">
           <h3>在线成员 · {online}</h3>
           <ul className="member-list">
@@ -1014,6 +1040,17 @@ export default function RoomPage() {
                 />
               </label>
             )}
+            <label>
+              本周房间挑战目标（分钟，0 = 关闭）
+              <input
+                type="number"
+                min="0"
+                max="100000"
+                value={editForm.weeklyGoalMinutes}
+                onChange={(e) => setEditForm({ ...editForm, weeklyGoalMinutes: e.target.value })}
+              />
+              <span className="muted">全员本周专注总时长达到目标即达成挑战</span>
+            </label>
             <label className="checkbox-label">
               <input
                 type="checkbox"

@@ -10,6 +10,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 @Service
 public class RoomService {
@@ -40,6 +42,7 @@ public class RoomService {
         room.setBreakMinutes(normalizeMinutes(request.breakMinutes(), 60));
         room.setAiTutorEnabled(Boolean.TRUE.equals(request.aiTutorEnabled()));
         room.setTutorPersona(trimToNull(request.tutorPersona()));
+        room.setWeeklyGoalMinutes(normalizeMinutes(request.weeklyGoalMinutes(), 100000));
         room.setOwner(owner);
         room.setCreatedAt(LocalDateTime.now());
         room = roomRepository.save(room);
@@ -76,6 +79,19 @@ public class RoomService {
                 .toList();
     }
 
+    /** 为你推荐：公开、未加入、成员多的房间。 */
+    @Transactional(readOnly = true)
+    public List<RoomResponse> recommendedRooms(User user) {
+        return roomRepository.search(null, null).stream()
+                .filter(room -> room.getPassword() == null)
+                .filter(room -> !roomMemberRepository.existsByRoomIdAndUserId(room.getId(), user.getId()))
+                .sorted(Comparator.comparingLong(
+                        (Room room) -> roomMemberRepository.countByRoomId(room.getId())).reversed())
+                .limit(6)
+                .map(this::toResponse)
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public RoomDetailResponse getRoomDetail(Long roomId) {
         Room room = getRoomOrThrow(roomId);
@@ -87,7 +103,8 @@ public class RoomService {
                 members.size(), room.getCreatedAt(), members,
                 room.getFocusMinutes() == null ? 0 : room.getFocusMinutes(),
                 room.getBreakMinutes() == null ? 0 : room.getBreakMinutes(),
-                room.isAiTutorEnabled(), room.getTutorPersona());
+                room.isAiTutorEnabled(), room.getTutorPersona(),
+                room.getWeeklyGoalMinutes() == null ? 0 : room.getWeeklyGoalMinutes());
     }
 
     @Transactional
@@ -142,6 +159,7 @@ public class RoomService {
         room.setBreakMinutes(normalizeMinutes(request.breakMinutes(), 60));
         room.setAiTutorEnabled(Boolean.TRUE.equals(request.aiTutorEnabled()));
         room.setTutorPersona(trimToNull(request.tutorPersona()));
+        room.setWeeklyGoalMinutes(normalizeMinutes(request.weeklyGoalMinutes(), 100000));
         if (request.password() != null) {
             // 空字符串 = 清除密码；非空 = 设置新密码
             room.setPassword(trimToNull(request.password()));
