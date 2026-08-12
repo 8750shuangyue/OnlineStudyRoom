@@ -1,0 +1,29 @@
+target/
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 敏感信息
+.env
+
+# 本地数据库文件
+data/
+
+# 数据备份
+backups/
+
+# 前端依赖与构建产物
+client/node_modules/
+client/dist/
+client/test-results/
+client/playwright-report/

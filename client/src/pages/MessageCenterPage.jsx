@@ -1,0 +1,244 @@
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router'
+import { api } from '../api.js'
+import { clearMentions } from '../useMessages.js'
+
+function formatTime(iso) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleString('zh-CN', {
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+export default function MessageCenterPage() {
+  const navigate = useNavigate()
+  const [mentions, setMentions] = useState([])
+  const [invites, setInvites] = useState([])
+  const [friendRequests, setFriendRequests] = useState([])
+  const [unreadRooms, setUnreadRooms] = useState([])
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const load = useCallback(async () => {
+    try {
+      const [m, inv, fr, ur] = await Promise.all([
+        api('/api/notifications?limit=50'),
+        api('/api/invites'),
+        api('/api/friends/requests'),
+        api('/api/rooms/unread')
+      ])
+      setMentions(m)
+      setInvites(inv)
+      setFriendRequests(fr)
+      setUnreadRooms(ur)
+    } catch (err) {
+      setError(err.message)
+    }
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  async function openMention(item) {
+    try {
+      await api(`/api/notifications/${item.id}/read`, { method: 'POST' })
+    } catch {
+      // 即使标记失败也照常跳转
+    }
+    clearMentions()
+    setMentions((prev) => prev.map((n) => (n.id === item.id ? { ...n, read: true } : n)))
+    if (item.roomId) {
+      navigate(`/rooms/${item.roomId}`)
+    }
+  }
+
+  async function markAllRead() {
+    setBusy(true)
+    setError('')
+    try {
+      await api('/api/notifications/read-all', { method: 'POST' })
+      clearMentions()
+      setMentions((prev) => prev.map((n) => ({ ...n, read: true })))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function actInvite(id, action) {
+    setBusy(true)
+    setError('')
+    try {
+      await api(`/api/invites/${id}/${action}`, { method: 'POST' })
+      setInvites((prev) => prev.filter((i) => i.id !== id))
+      await load()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function actFriend(id, action) {
+    setBusy(true)
+    setError('')
+    try {
+      await api(`/api/friends/requests/${id}/${action}`, { method: 'POST' })
+      setFriendRequests((prev) => prev.filter((r) => r.id !== id))
+      await load()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div>
+      <h2>消息中心</h2>
+      {error && <p className="error">{error}</p>}
+
+      <div className="card">
+        <div className="row-between">
+          <h3>
+            📣 @提及
+            {mentions.filter((n) => !n.read).length > 0 && (
+              <span className="unread-badge">{mentions.filter((n) => !n.read).length}</span>
+            )}
+          </h3>
+          {mentions.some((n) => !n.read) && (
+            <button className="btn tiny secondary" onClick={markAllRead} disabled={busy}>
+              全部已读
+            </button>
+          )}
+        </div>
+        {mentions.length === 0 ? (
+          <p className="muted">还没有人 @ 你。</p>
+        ) : (
+          <div className="msg-list">
+            {mentions.map((n) => (
+              <div
+                className={`msg-item ${n.read ? 'read' : ''}`}
+                key={n.id}
+                onClick={() => openMention(n)}
+              >
+                <div className="msg-title">
+                  {!n.read && <span className="msg-dot" />}
+                  {n.title}
+                  <span className="msg-time">{formatTime(n.createdAt)}</span>
+                </div>
+                <div className="msg-body">{n.body}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <h3>
+          🚪 房间邀请
+          {invites.length > 0 && <span className="unread-badge">{invites.length}</span>}
+        </h3>
+        {invites.length === 0 ? (
+          <p className="muted">没有待处理的房间邀请。</p>
+        ) : (
+          <div className="msg-list">
+            {invites.map((inv) => (
+              <div className="msg-item" key={inv.id}>
+                <div className="msg-title">
+                  {inv.fromUsername} 邀请你加入「{inv.roomName}」
+                  <span className="msg-time">{formatTime(inv.createdAt)}</span>
+                </div>
+                <div className="row msg-actions">
+                  <button
+                    className="btn tiny"
+                    onClick={() => actInvite(inv.id, 'accept')}
+                    disabled={busy}
+                  >
+                    接受
+                  </button>
+                  <button
+                    className="btn tiny secondary"
+                    onClick={() => actInvite(inv.id, 'reject')}
+                    disabled={busy}
+                  >
+                    拒绝
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <h3>
+          👥 好友请求
+          {friendRequests.length > 0 && (
+            <span className="unread-badge">{friendRequests.length}</span>
+          )}
+        </h3>
+        {friendRequests.length === 0 ? (
+          <p className="muted">没有待处理的好友请求。</p>
+        ) : (
+          <div className="msg-list">
+            {friendRequests.map((r) => (
+              <div className="msg-item" key={r.id}>
+                <div className="msg-title">
+                  {r.username} 请求添加你为好友
+                  <span className="msg-time">{formatTime(r.createdAt)}</span>
+                </div>
+                <div className="row msg-actions">
+                  <button
+                    className="btn tiny"
+                    onClick={() => actFriend(r.id, 'accept')}
+                    disabled={busy}
+                  >
+                    接受
+                  </button>
+                  <button
+                    className="btn tiny secondary"
+                    onClick={() => actFriend(r.id, 'reject')}
+                    disabled={busy}
+                  >
+                    拒绝
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <h3>
+          💬 房间未读
+          {unreadRooms.length > 0 && <span className="unread-badge">{unreadRooms.length}</span>}
+        </h3>
+        {unreadRooms.length === 0 ? (
+          <p className="muted">所有房间都已读。</p>
+        ) : (
+          <div className="msg-list">
+            {unreadRooms.map((room) => (
+              <div
+                className="msg-item"
+                key={room.roomId}
+                onClick={() => navigate(`/rooms/${room.roomId}`)}
+              >
+                <div className="msg-title">
+                  房间 #{room.roomId} 有 {room.count} 条未读消息
+                </div>
+                <button className="btn tiny secondary">进入查看</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
