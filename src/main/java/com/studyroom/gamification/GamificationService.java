@@ -228,7 +228,7 @@ public class GamificationService {
                 new TitleInfo("专注大师", "达到 5 级", level >= 5),
                 new TitleInfo("自律之星", "连续打卡 7 天", stats.getBestStreak() >= 7),
                 new TitleInfo("自律传说", "连续打卡 30 天", stats.getBestStreak() >= 30),
-                new TitleInfo("千里行者", "累计专注 1000 分钟", studySessionRepository.totalDurationSecondsByUserId(stats.getUser().getId()) / 60 >= 1000));
+                new TitleInfo("行者无疆", "累计专注 1000 分钟", studySessionRepository.totalDurationSecondsByUserId(stats.getUser().getId()) / 60 >= 1000));
     }
 
     private List<BadgeInfo> teamBadgeInfos() {
