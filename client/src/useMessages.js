@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { api } from './api.js'
+import { schedulePolling } from './poll.js'
 
 /**
  * 全局消息角标状态：@提及 / 房间邀请 / 好友请求 计数。
@@ -38,13 +39,7 @@ function ensureStarted() {
     return
   }
   started = true
-  refresh()
-  setInterval(refresh, 30000)
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      refresh()
-    }
-  })
+  schedulePolling(refresh, 30000)
 }
 
 export function clearMentions() {

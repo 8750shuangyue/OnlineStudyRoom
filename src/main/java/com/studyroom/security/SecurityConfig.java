@@ -27,7 +27,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 注册/登录、聊天接口、健康检查放行
                         .requestMatchers("/api/auth/register", "/api/auth/login",
-                                "/api/auth/refresh", "/api/chat/**", "/actuator/health", "/ws/**").permitAll()
+                                "/api/auth/refresh", "/actuator/health", "/ws/**",
+                                "/api/users/*/card").permitAll()
                         // 静态页面放行
                         .requestMatchers("/", "/index.html", "/static/**", "/favicon.ico", "/error").permitAll()
                         // 其余接口（未来的房间、计时等）需要登录

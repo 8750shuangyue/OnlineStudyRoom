@@ -1,8 +1,11 @@
 package com.studyroom.room;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 
 public interface RoomMemberRepository extends JpaRepository<RoomMember, Long> {
@@ -20,4 +23,11 @@ public interface RoomMemberRepository extends JpaRepository<RoomMember, Long> {
     List<RoomMember> findByUserId(Long userId);
 
     void deleteByRoomIdAndUserId(Long roomId, Long userId);
+
+    @Query("""
+            select m.room.id, count(m) from RoomMember m
+            where m.room.id in :roomIds
+            group by m.room.id
+            """)
+    List<Object[]> countByRoomIds(@Param("roomIds") Collection<Long> roomIds);
 }

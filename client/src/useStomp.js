@@ -7,13 +7,41 @@ import { getToken } from './api.js'
  */
 export function useStomp(
   roomId,
-  { username, onMessage, onPresence, onFocus, onSync, onMention } = {}
+  {
+    username,
+    onMessage,
+    onPresence,
+    onFocus,
+    onSync,
+    onMention,
+    onTeamFocus,
+    onConnect,
+    onDisconnect
+  } = {}
 ) {
   const clientRef = useRef(null)
-  const handlersRef = useRef({ onMessage, onPresence, onFocus, onSync, onMention })
+  const handlersRef = useRef({
+    onMessage,
+    onPresence,
+    onFocus,
+    onSync,
+    onMention,
+    onTeamFocus,
+    onConnect,
+    onDisconnect
+  })
 
   useEffect(() => {
-    handlersRef.current = { onMessage, onPresence, onFocus, onSync, onMention }
+    handlersRef.current = {
+      onMessage,
+      onPresence,
+      onFocus,
+      onSync,
+      onMention,
+      onTeamFocus,
+      onConnect,
+      onDisconnect
+    }
   })
 
   useEffect(() => {
@@ -22,10 +50,22 @@ export function useStomp(
       return undefined
     }
     const client = new Client({
-      brokerURL: `ws://${window.location.host}/ws?token=${encodeURIComponent(token)}`,
+      brokerURL: `${window.location.protocol === 'https:' ? 'wss://' : 'ws://'}${
+        window.location.host
+      }/ws?token=${encodeURIComponent(token)}`,
       connectHeaders: { roomId: String(roomId) },
       reconnectDelay: 3000,
+      onStompError: (frame) => {
+        console.warn('STOMP error:', frame?.headers?.message)
+      },
+      onWebSocketError: (event) => {
+        console.warn('WebSocket error:', event)
+      },
+      onWebSocketClose: () => {
+        handlersRef.current.onDisconnect?.()
+      },
       onConnect: () => {
+        handlersRef.current.onConnect?.()
         client.subscribe(`/topic/rooms/${roomId}/chat`, (frame) => {
           try {
             handlersRef.current.onMessage?.(JSON.parse(frame.body))
@@ -45,6 +85,13 @@ export function useStomp(
             handlersRef.current.onFocus?.(JSON.parse(frame.body))
           } catch {
             // 忽略无法解析的消息
+          }
+        })
+        client.subscribe(`/topic/rooms/${roomId}/team-focus`, (frame) => {
+          try {
+            handlersRef.current.onTeamFocus?.(JSON.parse(frame.body))
+          } catch {
+            // ignore
           }
         })
         client.subscribe(`/topic/rooms/${roomId}/sync`, (frame) => {

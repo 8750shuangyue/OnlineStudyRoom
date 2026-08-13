@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { api } from './api.js'
 import { notify } from './useAmbient.js'
 import { getSettings } from './settings.js'
+import { schedulePolling } from './poll.js'
 
 const KEY = 'last_activity_seen'
 const ICONS = { FOCUS_DONE: '⏱️', BADGE_EARNED: '🏅', FRIEND_ACCEPTED: '🤝', ROOM_CREATED: '🏠' }
@@ -35,8 +36,6 @@ export function useActivityNotifications() {
         busy = false
       }
     }
-    check()
-    const timer = setInterval(check, 60000)
-    return () => clearInterval(timer)
+    return schedulePolling(check, 60000)
   }, [])
 }

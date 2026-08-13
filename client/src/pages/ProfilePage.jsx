@@ -1,21 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { api } from '../api.js'
-
-const BADGE_ICONS = {
-  FIRST_FOCUS: '🐣',
-  SESSIONS_10: '🚀',
-  SESSIONS_50: '💪',
-  MINUTES_100: '⚒️',
-  MINUTES_500: '🛣️',
-  MINUTES_1000: '🌏',
-  STREAK_3: '✨',
-  STREAK_7: '📅',
-  STREAK_30: '🦾',
-  DAYS_7: '📆',
-  MARATHON: '🏃',
-  NIGHT_OWL: '🦉'
-}
+import { BADGE_ICONS } from '../badges.js'
 
 function formatDuration(seconds) {
   if (!seconds) return '0 分钟'
@@ -74,6 +60,11 @@ export default function ProfilePage() {
           <span className="muted">
             {stats.xpIntoLevel}/{stats.xpNeededForNext} XP
           </span>
+        </div>
+        <div className="row profile-actions">
+          <Link className="btn tiny" to={`/u/${encodeURIComponent(username)}`}>
+            🪪 公开名片
+          </Link>
         </div>
         <div className="profile-stats">
           <div>
@@ -139,6 +130,29 @@ export default function ProfilePage() {
                   </span>
                 </div>
                 {s.reflection && <div className="msg-body">💭 {s.reflection}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <h3>🏅 赛季徽章</h3>
+        {profile.seasonAwards.length === 0 ? (
+          <p className="muted">暂无赛季徽章，完成完整赛季的专注后自动结算。</p>
+        ) : (
+          <div className="season-award-list">
+            {profile.seasonAwards.map((a) => (
+              <div className="season-award-item" key={`${a.code}-${a.seasonKey}`}>
+                <span className="badge-emoji">🏅</span>
+                <span className="season-award-text">
+                  <b>{a.name}</b>
+                  <span className="muted">
+                    {a.description}
+                    {a.extra ? `（${a.extra}）` : ''}
+                  </span>
+                </span>
+                <span className="mini-chip">{a.seasonKey}</span>
               </div>
             ))}
           </div>

@@ -1,7 +1,7 @@
 package com.studyroom.ai;
 
 import com.studyroom.document.Document;
-import com.studyroom.document.DocumentRepository;
+import com.studyroom.document.DocumentChunkRepository;
 import com.studyroom.document.VectorSearchService;
 import com.studyroom.document.VectorSearchService.ChunkHit;
 import com.studyroom.mistake.Mistake;
@@ -32,16 +32,16 @@ public class AiService {
             """;
 
     private final ChatClient chatClient;
-    private final DocumentRepository documentRepository;
+    private final DocumentChunkRepository documentChunkRepository;
     private final VectorSearchService vectorSearchService;
     private final AiMemoryService aiMemoryService;
 
     public AiService(ChatClient.Builder builder,
-                     DocumentRepository documentRepository,
+                     DocumentChunkRepository documentChunkRepository,
                      VectorSearchService vectorSearchService,
                      AiMemoryService aiMemoryService) {
         this.chatClient = builder.build();
-        this.documentRepository = documentRepository;
+        this.documentChunkRepository = documentChunkRepository;
         this.vectorSearchService = vectorSearchService;
         this.aiMemoryService = aiMemoryService;
     }
@@ -123,15 +123,13 @@ public class AiService {
      * 基于上传的资料问答（轻量版 RAG），带多轮记忆。
      */
     public RAGResult ragAnswer(User user, String question) {
-        List<Document> documents = documentRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
-        if (documents.isEmpty()) {
+                List<Object[]> chunkRows = documentChunkRepository.findChunkRowsByUserId(user.getId());
+        if (chunkRows.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "请先上传学习资料");
         }
         List<ChunkSource> chunkSources = new ArrayList<>();
-        for (Document document : documents) {
-            for (String text : chunk(document.getContent())) {
-                chunkSources.add(new ChunkSource(document.getId(), document.getName(), text));
-            }
+        for (Object[] row : chunkRows) {
+            chunkSources.add(new ChunkSource((Long) row[0], (String) row[1], (String) row[2]));
         }
         List<String> chunkTexts = chunkSources.stream().map(ChunkSource::text).toList();
         List<ChunkHit> hits = vectorSearchService.searchTop(chunkTexts, question, 3);
@@ -335,13 +333,4 @@ public class AiService {
         return idx < 0 ? null : text.substring(idx + marker.length()).trim();
     }
 
-    private List<String> chunk(String text) {
-        List<String> chunks = new ArrayList<>();
-        int size = 500;
-        int step = 400;
-        for (int i = 0; i < text.length(); i += step) {
-            chunks.add(text.substring(i, Math.min(text.length(), i + size)));
-        }
-        return chunks;
-    }
 }

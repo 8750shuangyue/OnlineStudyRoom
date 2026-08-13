@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { api } from './api.js'
+import { schedulePolling } from './poll.js'
 
 /**
  * 全局未读状态：Layout / RoomsPage / RoomPage 共享一份数据。
@@ -31,13 +32,7 @@ function ensureStarted() {
     return
   }
   started = true
-  refresh()
-  setInterval(refresh, 30000)
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      refresh()
-    }
-  })
+  schedulePolling(refresh, 30000)
 }
 
 export function markRoomRead(roomId) {

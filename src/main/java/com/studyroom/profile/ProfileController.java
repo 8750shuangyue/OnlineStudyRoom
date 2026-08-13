@@ -36,7 +36,7 @@ public class ProfileController {
 
     /** 查看任意用户主页（登录后即可访问）。 */
     @GetMapping("/{username}")
-    @Transactional(readOnly = true)
+    @Transactional
     public ProfileResponse profile(@PathVariable String username, Authentication authentication) {
         if (authentication == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "未登录");
@@ -49,7 +49,18 @@ public class ProfileController {
                 .map(this::toRecent)
                 .toList();
         return new ProfileResponse(user.getUsername(), achievements.stats(),
-                achievements.badges(), achievements.titles(), sessions);
+                achievements.badges(), achievements.titles(), achievements.seasonAwards(), sessions);
+    }
+
+    /** 公开名片：无需登录即可访问，用于分享。 */
+    @GetMapping("/{username}/card")
+    @Transactional
+    public CardResponse publicCard(@PathVariable String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "�û�������"));
+        AchievementResponse achievements = gamificationService.achievements(user);
+        return new CardResponse(user.getUsername(), user.getCreatedAt(), achievements.stats(),
+                achievements.badges(), achievements.titles(), achievements.seasonAwards());
     }
 
     private RecentSession toRecent(StudySession session) {

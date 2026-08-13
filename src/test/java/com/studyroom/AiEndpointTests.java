@@ -66,12 +66,11 @@ class AiEndpointTests {
 
     @Test
     void aiEndpointsUseMockedModel() throws Exception {
-        // 聊天（无需登录）
-        mockMvc.perform(post("/api/chat")
+        // 匿名访问 AI 必须被拒绝（安全收紧）
+        mockMvc.perform(post("/api/ai/chat")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"message\":\"你好\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.reply").value("模拟回答"));
+                .andExpect(status().isUnauthorized());
 
         String token = register("alice");
 

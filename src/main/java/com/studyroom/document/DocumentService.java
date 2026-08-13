@@ -25,11 +25,16 @@ import org.apache.poi.xwpf.usermodel.XWPFTableRow;
 public class DocumentService {
 
     private static final long MAX_BYTES = 5_000_000;
+    private static final int MAX_DOCS = 50;
+    private static final int MAX_CONTENT_CHARS = 200_000;
 
     private final DocumentRepository documentRepository;
+    private final DocumentChunkRepository chunkRepository;
 
-    public DocumentService(DocumentRepository documentRepository) {
+    public DocumentService(DocumentRepository documentRepository,
+                           DocumentChunkRepository chunkRepository) {
         this.documentRepository = documentRepository;
+        this.chunkRepository = chunkRepository;
     }
 
     @Transactional
@@ -47,6 +52,12 @@ public class DocumentService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "文件读取失败");
         }
         String content = extractText(file.getOriginalFilename(), bytes);
+        if (documentRepository.countByUserId(user.getId()) >= MAX_DOCS) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "最多上传 50 份学习资料");
+        }
+        if (content.length() > MAX_CONTENT_CHARS) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "单份资料不能超过 20 万字符");
+        }
         if (content.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "文件内容为空");
         }
@@ -56,7 +67,9 @@ public class DocumentService {
         document.setCategory(null);
         document.setContent(content);
         document.setCreatedAt(LocalDateTime.now());
-        return toResponse(documentRepository.save(document));
+        Document saved = documentRepository.save(document);
+        chunkRepository.saveAll(DocumentChunking.chunk(saved));
+        return toResponse(saved);
     }
 
     private String extractText(String fileName, byte[] bytes) {
@@ -125,6 +138,7 @@ public class DocumentService {
         if (!document.getUser().getId().equals(user.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只能删除自己的资料");
         }
+        chunkRepository.deleteByDocumentId(documentId);
         documentRepository.delete(document);
     }
 

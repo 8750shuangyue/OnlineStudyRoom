@@ -40,6 +40,54 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
 
     @Query("""
             select coalesce(sum(s.durationSeconds), 0) from StudySession s
+            where s.user.id = :userId and s.durationSeconds >= 900
+              and s.startedAt >= :from and s.startedAt < :to
+            """)
+    long totalDurationSecondsByUserIdBetween(@Param("userId") Long userId,
+                                             @Param("from") LocalDateTime from,
+                                             @Param("to") LocalDateTime to);
+
+    @Query("""
+            select count(s) from StudySession s
+            where s.user.id = :userId and s.durationSeconds >= 900
+              and s.startedAt >= :from and s.startedAt < :to
+            """)
+    long countByUserIdBetween(@Param("userId") Long userId,
+                              @Param("from") LocalDateTime from,
+                              @Param("to") LocalDateTime to);
+
+    @Query("""
+            select s.startedAt from StudySession s
+            where s.user.id = :userId and s.durationSeconds >= 900
+              and s.startedAt >= :from and s.startedAt < :to
+            """)
+    List<LocalDateTime> startedAtBetween(@Param("userId") Long userId,
+                                         @Param("from") LocalDateTime from,
+                                         @Param("to") LocalDateTime to);
+
+    @Query("""
+            select s.room.id, sum(s.durationSeconds) from StudySession s
+            where s.user.id = :userId and s.durationSeconds >= 900
+              and s.startedAt >= :from and s.startedAt < :to
+            group by s.room.id
+            """)
+    List<Object[]> seasonRoomMinutesByUserId(@Param("userId") Long userId,
+                                             @Param("from") LocalDateTime from,
+                                             @Param("to") LocalDateTime to);
+
+    @Query("""
+            select s.user.id, sum(s.durationSeconds) from StudySession s
+            where s.room.id = :roomId and s.durationSeconds >= 900
+              and s.startedAt >= :from and s.startedAt < :to
+            group by s.user.id
+            order by sum(s.durationSeconds) desc
+            """)
+    List<Object[]> seasonRoomLeaderboard(@Param("roomId") Long roomId,
+                                         @Param("from") LocalDateTime from,
+                                         @Param("to") LocalDateTime to);
+
+    @Query("""
+            select coalesce(sum(s.durationSeconds), 0) from StudySession s
             where s.user.id = :userId and s.startedAt >= :from and s.durationSeconds >= 900
             """)
     long totalDurationSecondsByUserIdSince(@Param("userId") Long userId, @Param("from") LocalDateTime from);

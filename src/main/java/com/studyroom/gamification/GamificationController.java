@@ -30,7 +30,9 @@ public class GamificationController {
 
     @GetMapping("/achievements")
     public AchievementResponse achievements(Authentication authentication) {
-        return gamificationService.achievements(currentUser(authentication));
+        User user = currentUser(authentication);
+        gamificationService.settleSeasons(user);
+        return gamificationService.achievements(user);
     }
 
     @GetMapping("/goals")

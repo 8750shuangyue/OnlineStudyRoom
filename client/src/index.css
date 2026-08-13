@@ -3624,3 +3624,268 @@ textarea {
 [data-theme='light'] .msg-item:hover {
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
 }
+
+/* ---------- 组队专注 ---------- */
+.team-focus-card .team-countdown {
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-align: center;
+  margin: 6px 0 2px;
+  background: linear-gradient(135deg, #22d3ee, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.team-minutes-select {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  font-size: 14px;
+}
+
+.team-member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.team-member-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.team-member-chip.live {
+  background: rgba(34, 211, 238, 0.08);
+  border-color: rgba(34, 211, 238, 0.35);
+}
+
+.team-member-chip.done {
+  background: rgba(148, 163, 184, 0.08);
+  opacity: 0.75;
+}
+
+.team-member-chip .member-avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+}
+
+.team-recent {
+  margin-top: 12px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.3);
+  padding-top: 10px;
+}
+
+.team-recent-title {
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.team-recent-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+/* ---------- 赛季徽章 ---------- */
+.season-card .season-progress {
+  margin: 10px 0 4px;
+}
+
+.season-card .season-progress .xp-bar {
+  margin: 8px 0;
+}
+
+.season-award-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.season-award-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.season-award-item .badge-emoji {
+  font-size: 26px;
+}
+
+.season-award-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.profile-actions {
+  margin: 10px 0;
+}
+
+/* ---------- 公开名片 ---------- */
+.public-card-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  background: radial-gradient(1200px 600px at 15% 0%, #1e1b4b 0%, transparent 55%),
+    radial-gradient(1000px 600px at 100% 100%, #155e75 0%, transparent 50%), #0b1120;
+}
+
+.public-card {
+  position: relative;
+  width: min(520px, 100%);
+  border-radius: 28px;
+  padding: 34px 30px;
+  overflow: hidden;
+  background: linear-gradient(160deg, rgba(30, 27, 75, 0.95), rgba(15, 23, 42, 0.96));
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+}
+
+.pc-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.pc-glow-1 {
+  width: 260px;
+  height: 260px;
+  top: -90px;
+  right: -60px;
+  background: #7c3aed;
+}
+
+.pc-glow-2 {
+  width: 240px;
+  height: 240px;
+  bottom: -80px;
+  left: -70px;
+  background: #0891b2;
+}
+
+.pc-head {
+  position: relative;
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+.pc-avatar {
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #22d3ee, #8b5cf6);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3), 0 12px 30px rgba(34, 211, 238, 0.35);
+}
+
+.pc-head h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+.pc-level {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.pc-level .level-ring {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+}
+
+.pc-level-right {
+  flex: 1;
+}
+
+.pc-xp-label {
+  font-size: 13px;
+  margin-bottom: 8px;
+  color: #cbd5e1;
+}
+
+.pc-stats {
+  margin: 18px 0 4px;
+}
+
+.pc-section {
+  margin-top: 18px;
+}
+
+.pc-section h3 {
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+
+.pc-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pc-badge {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  border-radius: 14px;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+}
+
+.pc-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.error-card {
+  text-align: center;
+}
+
+.ws-down-banner {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}

@@ -9,7 +9,6 @@ import com.studyroom.study.StudySessionRepository;
 import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
 import jakarta.validation.Valid;
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -29,7 +28,7 @@ import java.util.Map;
  * AI 学习助手统一入口：普通对话、流式对话、专注总结、资料问答、错题讲解、学习计划。
  */
 @RestController
-@RequestMapping({"/api/ai", "/api/chat"})
+@RequestMapping("/api/ai")
 public class AiController {
 
     private final AiService aiService;
@@ -38,22 +37,19 @@ public class AiController {
     private final MistakeRepository mistakeRepository;
     private final NoteRepository noteRepository;
     private final AiBriefService aiBriefService;
-    private final ChatClient chatClient;
 
     public AiController(AiService aiService,
                         StudySessionRepository studySessionRepository,
                         UserRepository userRepository,
                         MistakeRepository mistakeRepository,
                         NoteRepository noteRepository,
-                        AiBriefService aiBriefService,
-                        ChatClient.Builder builder) {
+                        AiBriefService aiBriefService) {
         this.aiService = aiService;
         this.studySessionRepository = studySessionRepository;
         this.userRepository = userRepository;
         this.mistakeRepository = mistakeRepository;
         this.noteRepository = noteRepository;
         this.aiBriefService = aiBriefService;
-        this.chatClient = builder.build();
     }
 
     private Note ownedNote(Long id, Authentication authentication) {
@@ -72,23 +68,6 @@ public class AiController {
     }
 
     /** 普通对话：返回完整回复。 */
-    @PostMapping
-    public ChatResponse chat(@Valid @RequestBody ChatRequest request) {
-        String reply = chatClient.prompt()
-                .user(request.message())
-                .call()
-                .content();
-        return new ChatResponse(reply);
-    }
-
-    /** 流式对话：SSE 打字机效果。 */
-    @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chatStream(@Valid @RequestBody ChatRequest request) {
-        return chatClient.prompt()
-                .user(request.message())
-                .stream()
-                .content();
-    }
 
     /**
      * 为一次已结束的专注会话生成 AI 学习总结。

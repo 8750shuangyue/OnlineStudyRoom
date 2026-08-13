@@ -1,36 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api.js'
 import { useAuth } from '../auth.jsx'
-
-const BADGE_ICONS = {
-  FIRST_FOCUS: '🐣',
-  SESSIONS_10: '🚀',
-  SESSIONS_50: '💪',
-  MINUTES_100: '⚒️',
-  MINUTES_500: '🛣️',
-  MINUTES_1000: '🌏',
-  STREAK_3: '✨',
-  STREAK_7: '📅',
-  STREAK_30: '🦾',
-  DAYS_7: '📆',
-  MARATHON: '🏃',
-  NIGHT_OWL: '🦉'
-}
-
-const BADGE_COLORS = {
-  FIRST_FOCUS: { gradient: 'linear-gradient(135deg,#fbbf24,#f59e0b)', glow: '#f59e0b' },
-  SESSIONS_10: { gradient: 'linear-gradient(135deg,#60a5fa,#3b82f6)', glow: '#3b82f6' },
-  SESSIONS_50: { gradient: 'linear-gradient(135deg,#f87171,#ef4444)', glow: '#ef4444' },
-  MINUTES_100: { gradient: 'linear-gradient(135deg,#a78bfa,#8b5cf6)', glow: '#8b5cf6' },
-  MINUTES_500: { gradient: 'linear-gradient(135deg,#34d399,#10b981)', glow: '#10b981' },
-  MINUTES_1000: { gradient: 'linear-gradient(135deg,#22d3ee,#06b6d4)', glow: '#06b6d4' },
-  STREAK_3: { gradient: 'linear-gradient(135deg,#fcd34d,#fbbf24)', glow: '#fbbf24' },
-  STREAK_7: { gradient: 'linear-gradient(135deg,#c084fc,#a855f7)', glow: '#a855f7' },
-  STREAK_30: { gradient: 'linear-gradient(135deg,#94a3b8,#64748b)', glow: '#94a3b8' },
-  DAYS_7: { gradient: 'linear-gradient(135deg,#fb7185,#f43f5e)', glow: '#f43f5e' },
-  MARATHON: { gradient: 'linear-gradient(135deg,#4ade80,#22c55e)', glow: '#22c55e' },
-  NIGHT_OWL: { gradient: 'linear-gradient(135deg,#818cf8,#6366f1)', glow: '#6366f1' }
-}
+import { BADGE_ICONS, BADGE_COLORS, SEASON_ICONS } from '../badges.js'
 
 const CONFETTI_COLORS = ['#fbbf24', '#f472b6', '#22d3ee', '#a78bfa', '#34d399', '#60a5fa']
 
@@ -336,6 +307,53 @@ export default function AchievementsPage() {
             )
           })}
         </div>
+      </div>
+
+      <div className="card season-card">
+        <div className="row-between">
+          <h3>
+            🏆 赛季徽章 <span className="mini-chip">每周一结算</span>
+          </h3>
+        </div>
+        {data.currentSeason && (
+          <div className="season-progress">
+            <div className="muted">
+              本赛季（{data.currentSeason.seasonKey}）：专注 {data.currentSeason.minutes} 分钟 ·{' '}
+              {data.currentSeason.sessions} 次 · {data.currentSeason.days} 天
+            </div>
+            <div className="xp-bar">
+              <div
+                className="xp-fill"
+                style={{
+                  width: `${Math.min(100, Math.round((data.currentSeason.minutes / 300) * 100))}%`
+                }}
+              />
+            </div>
+            <span className="muted">
+              距离「赛季主力」（单赛季 300 分钟）还差{' '}
+              {Math.max(0, 300 - data.currentSeason.minutes)} 分钟
+            </span>
+          </div>
+        )}
+        {data.seasonAwards.length === 0 ? (
+          <p className="muted">还没有赛季徽章，完整专注一周后自动结算发放。</p>
+        ) : (
+          <div className="season-award-list">
+            {data.seasonAwards.map((a) => (
+              <div className="season-award-item" key={`${a.code}-${a.seasonKey}`}>
+                <span className="badge-emoji">{SEASON_ICONS[a.code] || '🏅'}</span>
+                <span className="season-award-text">
+                  <b>{a.name}</b>
+                  <span className="muted">
+                    {a.description}
+                    {a.extra ? `（${a.extra}）` : ''}
+                  </span>
+                </span>
+                <span className="mini-chip">{a.seasonKey}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

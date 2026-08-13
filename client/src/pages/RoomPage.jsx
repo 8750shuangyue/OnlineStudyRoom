@@ -84,6 +84,11 @@ export default function RoomPage() {
   const [rounds, setRounds] = useState(() => Number(localStorage.getItem(`rounds_${id}`) || 0))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [wsDown, setWsDown] = useState(false)
+  const [teamData, setTeamData] = useState({ active: null, recent: [] })
+  const [teamPlanned, setTeamPlanned] = useState(25)
+  const [teamLeft, setTeamLeft] = useState(0)
+  const [teamBusy, setTeamBusy] = useState(false)
   const noise = useWhiteNoise()
   const settings = useMemo(() => getSettings(), [])
   const setTitle = usePageTitleCountdown()
@@ -98,14 +103,15 @@ export default function RoomPage() {
 
   const load = useCallback(async () => {
     try {
-      const [roomData, page, onlineData, boardData, active, focusData, chal] = await Promise.all([
+      const [roomData, page, onlineData, boardData, active, focusData, chal, team] = await Promise.all([
         api(`/api/rooms/${id}`),
         api(`/api/rooms/${id}/messages?limit=50`),
         api(`/api/rooms/${id}/online`),
         api(`/api/rooms/${id}/leaderboard?period=${boardPeriod}`),
         api('/api/sessions/active'),
         api(`/api/rooms/${id}/focus-status`),
-        api(`/api/rooms/${id}/challenge`)
+        api(`/api/rooms/${id}/challenge`),
+        api(`/api/rooms/${id}/team-focus`)
       ])
       setRoom(roomData)
       setMessages(page.messages || [])
@@ -115,6 +121,7 @@ export default function RoomPage() {
       setSession(active)
       setFocusMap(Object.fromEntries(focusData.map((f) => [f.username, f])))
       setChallenge(chal)
+      setTeamData(team)
       if (roomData.members.includes(user.username)) {
         api(`/api/rooms/${id}/read`, { method: 'POST' }).catch(() => {})
         markRoomRead(id)
@@ -147,6 +154,13 @@ export default function RoomPage() {
         return next
       }),
     onSync: (e) => setSyncBanner(e),
+    onConnect: () => setWsDown(false),
+    onDisconnect: () => setWsDown(true),
+    onTeamFocus: (tf) =>
+      setTeamData((prev) => ({
+        active: tf.status === 'ACTIVE' ? tf : null,
+        recent: tf.status === 'FINISHED' ? [tf, ...(prev.recent || [])].slice(0, 5) : prev.recent
+      })),
     onMention: (m) => {
       setMentionToast(m)
       if (settings.notifications) {
@@ -173,6 +187,19 @@ export default function RoomPage() {
     const timer = setTimeout(() => setMentionToast(null), 10000)
     return () => clearTimeout(timer)
   }, [mentionToast])
+
+  useEffect(() => {
+    if (!teamData.active) {
+      setTeamLeft(0)
+      return undefined
+    }
+    const end =
+      new Date(teamData.active.startedAt).getTime() + teamData.active.plannedMinutes * 60000
+    const tick = () => setTeamLeft(Math.max(0, Math.floor((end - Date.now()) / 1000)))
+    tick()
+    const timer = setInterval(tick, 1000)
+    return () => clearInterval(timer)
+  }, [teamData.active])
 
   useEffect(() => {
     if (!session) {
@@ -334,6 +361,81 @@ export default function RoomPage() {
       await load()
     } catch (err) {
       setError(err.message)
+    }
+  }
+
+  async function startTeamFocus() {
+    setTeamBusy(true)
+    setError('')
+    try {
+      const tf = await api(`/api/rooms/${id}/team-focus/start`, {
+        method: 'POST',
+        body: { plannedMinutes: teamPlanned }
+      })
+      setTeamData((prev) => ({ active: tf, recent: prev.recent }))
+      try {
+        const s = await api('/api/sessions/start', { method: 'POST', body: { roomId: Number(id) } })
+        setSession(s)
+        setSummary(null)
+        setReflectionText('')
+      } catch {
+        // 个人计时为可选项，失败不阻塞组队
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setTeamBusy(false)
+    }
+  }
+
+  async function joinTeamFocus() {
+    if (!teamData.active) {
+      return
+    }
+    setTeamBusy(true)
+    setError('')
+    try {
+      const tf = await api(`/api/rooms/${id}/team-focus/${teamData.active.id}/join`, {
+        method: 'POST'
+      })
+      setTeamData((prev) => ({ active: tf, recent: prev.recent }))
+      try {
+        const s = await api('/api/sessions/start', { method: 'POST', body: { roomId: Number(id) } })
+        setSession(s)
+        setSummary(null)
+        setReflectionText('')
+      } catch {
+        // 个人计时为可选项
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setTeamBusy(false)
+    }
+  }
+
+  async function stopTeamFocus() {
+    if (!teamData.active) {
+      return
+    }
+    setTeamBusy(true)
+    setError('')
+    try {
+      const tf = await api(`/api/rooms/${id}/team-focus/${teamData.active.id}/stop`, {
+        method: 'POST'
+      })
+      if (tf.status === 'FINISHED') {
+        setTeamData((prev) => ({
+          active: null,
+          recent: [tf, ...(prev.recent || [])].slice(0, 5)
+        }))
+      } else {
+        setTeamData((prev) => ({ active: tf, recent: prev.recent }))
+      }
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setTeamBusy(false)
     }
   }
 
@@ -773,6 +875,9 @@ export default function RoomPage() {
               </div>
             )}
           </div>
+          {wsDown && (
+            <div className="ws-down-banner">🔌 实时连接已断开，正在自动重连…</div>
+          )}
           {mentionToast && (
             <div className="mention-toast" onClick={() => setMentionToast(null)}>
               <strong>{mentionToast.fromUsername}</strong> 在「{mentionToast.roomName || '房间'}
@@ -850,6 +955,98 @@ export default function RoomPage() {
       </div>
 
       <div className="room-side">
+        <div className="card team-focus-card">
+          <div className="row-between">
+            <h3>
+              🤝 组队专注 <span className="mini-chip">2-6 人</span>
+            </h3>
+            {teamData.active && (
+              <span className="mini-chip ok-chip">🔥 进行中</span>
+            )}
+          </div>
+          {!teamData.active ? (
+            <>
+              <p className="muted">和房间里的同学开启同步专注，到点自动结算，互相监督不偷懒。</p>
+              <div className="row noise-row">
+                <select
+                  className="team-minutes-select"
+                  value={teamPlanned}
+                  onChange={(e) => setTeamPlanned(Number(e.target.value))}
+                >
+                  {[15, 25, 45, 60, 90].map((m) => (
+                    <option key={m} value={m}>
+                      {m} 分钟
+                    </option>
+                  ))}
+                </select>
+                <button className="btn" onClick={startTeamFocus} disabled={teamBusy || !isMember}>
+                  发起组队
+                </button>
+              </div>
+              {!isMember && <p className="muted">加入房间后才能发起或加入组队专注。</p>}
+              {teamData.recent.length > 0 && (
+                <div className="team-recent">
+                  <div className="muted team-recent-title">最近结算</div>
+                  {teamData.recent.map((tf) => (
+                    <div className="team-recent-item" key={tf.id}>
+                      <span>
+                        {new Date(tf.startedAt).toLocaleDateString('zh-CN')} · {tf.plannedMinutes}{' '}
+                        分钟
+                      </span>
+                      <span className="muted">{tf.members.length} 人</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="team-countdown">{formatSeconds(teamLeft)}</div>
+              <p className="muted">
+                {new Date(teamData.active.startedAt).toLocaleTimeString('zh-CN', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}{' '}
+                开始 · 计划 {teamData.active.plannedMinutes} 分钟
+              </p>
+              <div className="team-member-list">
+                {teamData.active.members.map((m) => (
+                  <div
+                    className={`team-member-chip ${m.finished ? 'done' : 'live'}`}
+                    key={m.username}
+                  >
+                    <span className="member-avatar">{m.username.slice(0, 1).toUpperCase()}</span>
+                    <span>{m.username}</span>
+                    <span className="muted">
+                      {m.finished
+                        ? `完成 ${Math.max(0, Math.round((m.durationSeconds || 0) / 60))} 分`
+                        : '专注中'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="row center-row">
+                {teamData.active.members.some((m) => m.username === user.username) ? (
+                  teamData.active.members.find((m) => m.username === user.username)?.finished ? (
+                    <p className="muted">你已结束，等待其他队友…</p>
+                  ) : (
+                    <button className="btn danger" onClick={stopTeamFocus} disabled={teamBusy}>
+                      结束我的组队
+                    </button>
+                  )
+                ) : (
+                  <button
+                    className="btn"
+                    onClick={joinTeamFocus}
+                    disabled={teamBusy || !isMember || teamData.active.members.length >= 6}
+                  >
+                    加入队伍 ({teamData.active.members.length}/6)
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
         {challenge?.goalMinutes > 0 && (
           <div className={`card challenge-card ${challenge.achieved ? 'achieved' : ''}`}>
             <div className="row-between">

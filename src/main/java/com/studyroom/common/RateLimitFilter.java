@@ -11,18 +11,30 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 简单接口限流（内存版，固定窗口每分钟）：
- * 认证接口每 IP 每分钟 20 次，其余接口 300 次。
- * 配额按页面多接口并发 + 轮询预留，正常使用不会触发。
+ * 简单接口限流（内存实现，固定窗口每分钟）：
+ * - 认证接口：20 次/分钟/IP
+ * - AI 接口：15 次/分钟/IP（防止匿名或异常流量白嫖 API 额度）
+ * - 只读轮询接口：不计入限流，避免前端切页/轮询触发 429
+ * - 其余接口：300 次/分钟/IP
+ * 客户端真实 IP 优先取 X-Real-IP / X-Forwarded-For（部署在 Nginx 后时生效）。
  */
 @Component
 public class RateLimitFilter implements Filter {
 
     private static final int AUTH_LIMIT = 20;
+    private static final int AI_LIMIT = 15;
     private static final int DEFAULT_LIMIT = 300;
+
+    private static final Set<String> POLLING_OK = Set.of(
+            "/api/rooms/unread",
+            "/api/notifications/unread-count",
+            "/api/invites",
+            "/api/friends/requests",
+            "/api/feed");
 
     private final Map<String, Window> windows = new ConcurrentHashMap<>();
 
@@ -32,18 +44,37 @@ public class RateLimitFilter implements Filter {
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
         String uri = req.getRequestURI();
+
+        if (POLLING_OK.contains(uri)) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         boolean auth = uri.startsWith("/api/auth/");
-        int limit = auth ? AUTH_LIMIT : DEFAULT_LIMIT;
-        String key = req.getRemoteAddr() + "|" + (auth ? "auth" : "default");
+        boolean ai = uri.startsWith("/api/ai");
+        int limit = auth ? AUTH_LIMIT : ai ? AI_LIMIT : DEFAULT_LIMIT;
+        String key = clientIp(req) + "|" + (auth ? "auth" : ai ? "ai" : "default");
 
         if (!windows.computeIfAbsent(key, k -> new Window()).allow(limit)) {
             res.setStatus(429);
             res.setContentType("application/json;charset=UTF-8");
             res.getWriter().write(
-                    "{\"status\":429,\"error\":\"Too Many Requests\",\"message\":\"请求过于频繁，请稍后再试\"}");
+                    "{\"status\":429,\"error\":\"Too Many Requests\",\"message\":\"请求太频繁了，请稍后再试\"}");
             return;
         }
         chain.doFilter(request, response);
+    }
+
+    private String clientIp(HttpServletRequest req) {
+        String realIp = req.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+        String forwarded = req.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return req.getRemoteAddr();
     }
 
     static class Window {

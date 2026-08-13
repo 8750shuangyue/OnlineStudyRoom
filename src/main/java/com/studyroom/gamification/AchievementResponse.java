@@ -5,5 +5,7 @@ import java.util.List;
 public record AchievementResponse(
         UserStatsResponse stats,
         List<BadgeInfo> badges,
-        List<TitleInfo> titles) {
+        List<TitleInfo> titles,
+        List<SeasonAwardInfo> seasonAwards,
+        SeasonProgress currentSeason) {
 }

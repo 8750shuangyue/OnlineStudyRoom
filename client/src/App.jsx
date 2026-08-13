@@ -5,6 +5,7 @@ import { useAuth } from './auth.jsx'
 
 const LoginPage = lazy(() => import('./pages/LoginPage.jsx'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'))
+const PublicCardPage = lazy(() => import('./pages/PublicCardPage.jsx'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx'))
 const RoomsPage = lazy(() => import('./pages/RoomsPage.jsx'))
 const FriendsPage = lazy(() => import('./pages/FriendsPage.jsx'))
@@ -38,6 +39,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/u/:username" element={<PublicCardPage />} />
         <Route
           path="/"
           element={

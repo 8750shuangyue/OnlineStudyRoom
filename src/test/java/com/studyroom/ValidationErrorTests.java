@@ -32,8 +32,15 @@ class ValidationErrorTests {
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value("密码至少 8 位，且需包含字母和数字"));
 
-        // 聊天消息为空 → 400
-        mockMvc.perform(post("/api/chat")
+        // 消息为空 → 400（需登录）
+        String chatTokenJson = mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"chatcheck\",\"password\":\"secret123\"}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String chatToken = JsonPath.read(chatTokenJson, "$.token");
+        mockMvc.perform(post("/api/ai/chat")
+                        .header("Authorization", "Bearer " + chatToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"message\":\"\"}"))
                 .andExpect(status().isBadRequest())

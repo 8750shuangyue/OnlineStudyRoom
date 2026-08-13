@@ -12,6 +12,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class RoomService {
@@ -60,9 +62,9 @@ public class RoomService {
 
     @Transactional(readOnly = true)
     public List<RoomResponse> listRooms(String search, String category) {
-        return roomRepository.search(trimToNull(search), trimToNull(category)).stream()
-                .map(this::toResponse)
-                .toList();
+        List<Room> rooms = roomRepository.search(trimToNull(search), trimToNull(category));
+        Map<Long, Long> counts = memberCounts(rooms);
+        return rooms.stream().map(room -> toResponse(room, counts)).toList();
     }
 
     @Transactional(readOnly = true)
@@ -82,13 +84,16 @@ public class RoomService {
     /** 为你推荐：公开、未加入、成员多的房间。 */
     @Transactional(readOnly = true)
     public List<RoomResponse> recommendedRooms(User user) {
-        return roomRepository.search(null, null).stream()
+        List<Room> candidates = roomRepository.search(null, null).stream()
                 .filter(room -> room.getPassword() == null)
                 .filter(room -> !roomMemberRepository.existsByRoomIdAndUserId(room.getId(), user.getId()))
+                .toList();
+        Map<Long, Long> counts = memberCounts(candidates);
+        return candidates.stream()
                 .sorted(Comparator.comparingLong(
-                        (Room room) -> roomMemberRepository.countByRoomId(room.getId())).reversed())
+                        (Room room) -> counts.getOrDefault(room.getId(), 0L)).reversed())
                 .limit(6)
-                .map(this::toResponse)
+                .map(room -> toResponse(room, counts))
                 .toList();
     }
 
@@ -220,9 +225,26 @@ public class RoomService {
     }
 
     private RoomResponse toResponse(Room room) {
+        return toResponse(room, Map.of(room.getId(), roomMemberRepository.countByRoomId(room.getId())));
+    }
+
+    private RoomResponse toResponse(Room room, Map<Long, Long> counts) {
+        long memberCount = counts.getOrDefault(room.getId(), 0L);
         return new RoomResponse(room.getId(), room.getName(), room.getCategory(),
                 room.getPassword() != null, room.getOwner().getUsername(),
-                roomMemberRepository.countByRoomId(room.getId()), room.getCreatedAt());
+                memberCount, room.getCreatedAt());
+    }
+
+    private Map<Long, Long> memberCounts(List<Room> rooms) {
+        if (rooms.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> ids = rooms.stream().map(Room::getId).toList();
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : roomMemberRepository.countByRoomIds(ids)) {
+            counts.put((Long) row[0], ((Number) row[1]).longValue());
+        }
+        return counts;
     }
 
     private String trimToNull(String value) {

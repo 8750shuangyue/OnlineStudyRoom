@@ -72,6 +72,11 @@ export async function api(path, { method = 'GET', body, auth = true, retried = f
     body: body !== undefined ? JSON.stringify(body) : undefined
   })
 
+  if (resp.status === 429 && !retried) {
+    await new Promise((r) => setTimeout(r, 2000))
+    return api(path, { method, body, auth, retried: true })
+  }
+
   if (resp.status === 401 && auth) {
     if (!retried && (await refreshAccessToken())) {
       return api(path, { method, body, auth, retried: true })

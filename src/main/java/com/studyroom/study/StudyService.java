@@ -97,6 +97,7 @@ public class StudyService {
                 });
             }
             gamificationService.recordSessionCompleted(user, session);
+            gamificationService.settleSeasons(user);
             activityService.record(user.getId(), user.getUsername(), "FOCUS_DONE",
                     "在「" + session.getRoom().getName() + "」完成 "
                             + Math.max(1, session.getDurationSeconds() / 60) + " 分钟专注");
