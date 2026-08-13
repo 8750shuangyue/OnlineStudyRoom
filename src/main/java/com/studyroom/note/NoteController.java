@@ -1,5 +1,6 @@
 package com.studyroom.note;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
 import jakarta.validation.Valid;
@@ -21,14 +22,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/notes")
-public class NoteController {
+public class NoteController extends CurrentUserSupport {
 
     private final NoteService noteService;
-    private final UserRepository userRepository;
 
     public NoteController(NoteService noteService, UserRepository userRepository) {
+        super(userRepository);
         this.noteService = noteService;
-        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -68,8 +68,4 @@ public class NoteController {
         noteService.delete(currentUser(authentication), id);
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
 }

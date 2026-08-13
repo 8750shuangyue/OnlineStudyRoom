@@ -1,5 +1,6 @@
 package com.studyroom.team;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
 import jakarta.validation.constraints.Max;
@@ -17,20 +18,19 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/rooms/{roomId}/team-focus")
-public class TeamFocusController {
+public class TeamFocusController extends CurrentUserSupport {
 
     public record StartRequest(
-            @Min(value = 5, message = "����ʱ�������� 5 ����")
-            @Max(value = 180, message = "����ʱ������ܳ��� 180 ����")
+            @Min(value = 5, message = "专注时长不能低于 5 分钟")
+            @Max(value = 180, message = "专注时长不能超过 180 分钟")
             Integer plannedMinutes) {
     }
 
     private final TeamFocusService teamFocusService;
-    private final UserRepository userRepository;
 
     public TeamFocusController(TeamFocusService teamFocusService, UserRepository userRepository) {
+        super(userRepository);
         this.teamFocusService = teamFocusService;
-        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -61,8 +61,4 @@ public class TeamFocusController {
         return teamFocusService.stop(currentUser(authentication), roomId, teamFocusId);
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "�û�������"));
-    }
 }

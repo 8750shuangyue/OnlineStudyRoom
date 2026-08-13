@@ -1,6 +1,8 @@
 package com.studyroom.study;
 
-import com.studyroom.user.User;
+import com.studyroom.common.CurrentUserSupport;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import com.studyroom.user.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -13,20 +15,29 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/sessions")
-public class StudyController {
+public class StudyController extends CurrentUserSupport {
+
+    public record StudySessionRequest(
+            @NotNull(message = "请指定房间")
+            Long roomId,
+            Long taskId) {
+    }
+
+    public record ReflectionRequest(
+            @Size(max = 2000, message = "心得不能超过 2000 字")
+            String text) {
+    }
 
     private final StudyService studyService;
-    private final UserRepository userRepository;
 
     public StudyController(StudyService studyService, UserRepository userRepository) {
+        super(userRepository);
         this.studyService = studyService;
-        this.userRepository = userRepository;
     }
 
     @PostMapping("/start")
@@ -66,8 +77,4 @@ public class StudyController {
         return studyService.updateReflection(currentUser(authentication), id, request.text());
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
 }

@@ -96,6 +96,13 @@
             <artifactId>spring-ai-starter-model-deepseek</artifactId>
         </dependency>
 
+        <!-- OpenAPI 接口文档（Swagger UI，访问 /swagger-ui.html） -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>3.1.0</version>
+        </dependency>
+
         <!-- 健康检查：验证应用启动，与 AI 是否配置成功无关 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

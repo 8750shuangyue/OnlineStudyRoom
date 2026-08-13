@@ -1,5 +1,6 @@
 package com.studyroom.ai;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.mistake.Mistake;
 import com.studyroom.mistake.MistakeRepository;
 import com.studyroom.note.Note;
@@ -29,11 +30,10 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/ai")
-public class AiController {
+public class AiController extends CurrentUserSupport {
 
     private final AiService aiService;
     private final StudySessionRepository studySessionRepository;
-    private final UserRepository userRepository;
     private final MistakeRepository mistakeRepository;
     private final NoteRepository noteRepository;
     private final AiBriefService aiBriefService;
@@ -44,9 +44,9 @@ public class AiController {
                         MistakeRepository mistakeRepository,
                         NoteRepository noteRepository,
                         AiBriefService aiBriefService) {
+        super(userRepository);
         this.aiService = aiService;
         this.studySessionRepository = studySessionRepository;
-        this.userRepository = userRepository;
         this.mistakeRepository = mistakeRepository;
         this.noteRepository = noteRepository;
         this.aiBriefService = aiBriefService;
@@ -62,11 +62,6 @@ public class AiController {
         return note;
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
-
     /** 普通对话：返回完整回复。 */
 
     /**
@@ -75,8 +70,7 @@ public class AiController {
     @PostMapping("/sessions/{id}/summary")
     @Transactional(readOnly = true)
     public Map<String, String> summary(@PathVariable Long id, Authentication authentication) {
-        User user = userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
+        User user = currentUser(authentication);
         StudySession session = studySessionRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "会话不存在"));
         if (!session.getUser().getId().equals(user.getId())) {
@@ -92,8 +86,7 @@ public class AiController {
     @PostMapping("/rag")
     public Map<String, Object> rag(@Valid @RequestBody RAGRequest request,
                                    Authentication authentication) {
-        User user = userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
+        User user = currentUser(authentication);
         RAGResult result = aiService.ragAnswer(user, request.question());
         return Map.of("answer", result.answer(), "sources", result.sources());
     }
@@ -120,8 +113,7 @@ public class AiController {
 
     @PostMapping("/mistakes/{id}/explain")
     public Map<String, String> explainMistake(@PathVariable Long id, Authentication authentication) {
-        User user = userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
+        User user = currentUser(authentication);
         Mistake mistake = mistakeRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "错题不存在"));
         if (!mistake.getUser().getId().equals(user.getId())) {
@@ -170,8 +162,7 @@ public class AiController {
     @PostMapping("/study-plan")
     public Map<String, String> studyPlan(@Valid @RequestBody StudyPlanRequest request,
                                          Authentication authentication) {
-        userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
+        currentUser(authentication);
         return Map.of("plan", aiService.studyPlan(request.goal(), request.hoursPerDay()));
     }
 }

@@ -57,7 +57,7 @@ public class ProfileController {
     @Transactional
     public CardResponse publicCard(@PathVariable String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "�û�������"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "用户不存在"));
         AchievementResponse achievements = gamificationService.achievements(user);
         return new CardResponse(user.getUsername(), user.getCreatedAt(), achievements.stats(),
                 achievements.badges(), achievements.titles(), achievements.seasonAwards());

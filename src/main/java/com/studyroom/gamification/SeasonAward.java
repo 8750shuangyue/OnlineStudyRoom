@@ -36,7 +36,7 @@ public class SeasonAward {
     @Column(nullable = false)
     private LocalDateTime earnedAt;
 
-    /** ��ս����������Ƶȸ�����Ϣ */
+    /** 附加信息（如房间名、兑换说明等） */
     @Column(length = 200)
     private String extra;
 

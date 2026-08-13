@@ -1,5 +1,6 @@
 package com.studyroom.task;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
 import jakarta.validation.Valid;
@@ -20,14 +21,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tasks")
-public class TaskController {
+public class TaskController extends CurrentUserSupport {
 
     private final TaskService taskService;
-    private final UserRepository userRepository;
 
     public TaskController(TaskService taskService, UserRepository userRepository) {
+        super(userRepository);
         this.taskService = taskService;
-        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -54,8 +54,4 @@ public class TaskController {
         taskService.delete(currentUser(authentication), id);
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
 }

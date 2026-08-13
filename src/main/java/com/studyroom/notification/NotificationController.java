@@ -1,5 +1,6 @@
 package com.studyroom.notification;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -18,15 +19,14 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notifications")
-public class NotificationController {
+public class NotificationController extends CurrentUserSupport {
 
     private final NotificationService notificationService;
-    private final UserRepository userRepository;
 
     public NotificationController(NotificationService notificationService,
                                   UserRepository userRepository) {
+        super(userRepository);
         this.notificationService = notificationService;
-        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -54,8 +54,4 @@ public class NotificationController {
         notificationService.markRead(id, currentUser(authentication).getId());
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
 }

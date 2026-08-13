@@ -1,5 +1,6 @@
 package com.studyroom.stats;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -18,14 +19,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
-public class StatsController {
+public class StatsController extends CurrentUserSupport {
 
     private final StatsService statsService;
-    private final UserRepository userRepository;
 
     public StatsController(StatsService statsService, UserRepository userRepository) {
+        super(userRepository);
         this.statsService = statsService;
-        this.userRepository = userRepository;
     }
 
     @GetMapping("/stats/me")
@@ -67,8 +67,4 @@ public class StatsController {
         return statsService.timeAnalysis(currentUser(authentication));
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
 }

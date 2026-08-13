@@ -1,5 +1,6 @@
 package com.studyroom.flashcard;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
 import jakarta.validation.Valid;
@@ -20,14 +21,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cards")
-public class FlashcardController {
+public class FlashcardController extends CurrentUserSupport {
 
     private final FlashcardService flashcardService;
-    private final UserRepository userRepository;
 
     public FlashcardController(FlashcardService flashcardService, UserRepository userRepository) {
+        super(userRepository);
         this.flashcardService = flashcardService;
-        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -65,8 +65,4 @@ public class FlashcardController {
         flashcardService.delete(currentUser(authentication).getId(), id);
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
 }

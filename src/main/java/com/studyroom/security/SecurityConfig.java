@@ -29,6 +29,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/register", "/api/auth/login",
                                 "/api/auth/refresh", "/actuator/health", "/ws/**",
                                 "/api/users/*/card").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // 静态页面放行
                         .requestMatchers("/", "/index.html", "/static/**", "/favicon.ico", "/error").permitAll()
                         // 其余接口（未来的房间、计时等）需要登录

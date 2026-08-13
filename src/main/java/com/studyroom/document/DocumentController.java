@@ -1,5 +1,6 @@
 package com.studyroom.document;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -22,14 +23,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/documents")
-public class DocumentController {
+public class DocumentController extends CurrentUserSupport {
 
     private final DocumentService documentService;
-    private final UserRepository userRepository;
 
     public DocumentController(DocumentService documentService, UserRepository userRepository) {
+        super(userRepository);
         this.documentService = documentService;
-        this.userRepository = userRepository;
     }
 
     @PostMapping
@@ -62,8 +62,4 @@ public class DocumentController {
         documentService.delete(currentUser(authentication), id);
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
 }

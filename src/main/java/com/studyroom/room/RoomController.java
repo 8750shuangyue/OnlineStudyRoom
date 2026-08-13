@@ -1,5 +1,6 @@
 package com.studyroom.room;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.realtime.ChatPageResponse;
 import com.studyroom.realtime.ChatService;
 import com.studyroom.realtime.PresenceService;
@@ -35,7 +36,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/rooms")
-public class RoomController {
+public class RoomController extends CurrentUserSupport {
 
     public record JoinRequest(String password) {
     }
@@ -56,7 +57,6 @@ public class RoomController {
     }
 
     private final RoomService roomService;
-    private final UserRepository userRepository;
     private final PresenceService presenceService;
     private final ChatService chatService;
     private final StudyService studyService;
@@ -70,8 +70,8 @@ public class RoomController {
                           StudyService studyService,
                           AiService aiService,
                           StatsService statsService) {
+        super(userRepository);
         this.roomService = roomService;
-        this.userRepository = userRepository;
         this.presenceService = presenceService;
         this.chatService = chatService;
         this.studyService = studyService;
@@ -229,8 +229,4 @@ public class RoomController {
         }
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
 }

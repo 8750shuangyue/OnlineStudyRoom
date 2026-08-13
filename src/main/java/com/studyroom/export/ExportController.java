@@ -1,5 +1,6 @@
 package com.studyroom.export;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.study.StudySession;
 import com.studyroom.study.StudySessionRepository;
 import com.studyroom.user.User;
@@ -14,28 +15,25 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/export")
-public class ExportController {
+public class ExportController extends CurrentUserSupport {
 
     private final StudySessionRepository studySessionRepository;
-    private final UserRepository userRepository;
 
     public ExportController(StudySessionRepository studySessionRepository, UserRepository userRepository) {
+        super(userRepository);
         this.studySessionRepository = studySessionRepository;
-        this.userRepository = userRepository;
     }
 
     @GetMapping(value = "/sessions.csv", produces = "text/csv")
     @Transactional(readOnly = true)
     public ResponseEntity<byte[]> exportSessions(Authentication authentication) {
-        User user = userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
+        User user = currentUser(authentication);
         List<StudySession> sessions = studySessionRepository.findByUserIdOrderByStartedAtDesc(user.getId());
         StringBuilder csv = new StringBuilder("开始时间,结束时间,房间,时长(分钟)\n");
         for (StudySession s : sessions) {

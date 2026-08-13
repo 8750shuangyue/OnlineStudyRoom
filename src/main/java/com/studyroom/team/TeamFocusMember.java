@@ -34,7 +34,7 @@ public class TeamFocusMember {
     @Column(nullable = false)
     private LocalDateTime joinedAt;
 
-    /** null ��ʾ��δ������˽����� */
+    /** null 表示未结束（个人结束时间） */
     private LocalDateTime endedAt;
 
     private Long durationSeconds;

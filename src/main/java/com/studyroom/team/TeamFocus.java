@@ -35,7 +35,7 @@ public class TeamFocus {
     @Column(nullable = false)
     private LocalDateTime startedAt;
 
-    /** �ƻ�ʱ�������ӣ�����ʱ���Զ����ᣩ */
+    /** 计划时长（分钟），到达时自动结束 */
     @Column(nullable = false)
     private int plannedMinutes;
 

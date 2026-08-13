@@ -56,13 +56,13 @@ public class TeamFocusService {
     public TeamFocusResponse start(User user, Long roomId, Integer plannedMinutes) {
         requireMember(roomId, user.getId());
         if (teamFocusRepository.existsByRoomIdAndStatus(roomId, TeamFocusStatus.ACTIVE)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "�÷����Ѿ��л�еĶ���רע");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "该房间已经有进行中的团队专注");
         }
         if (memberRepository.countActiveByUserId(user.getId()) > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "���Ѿ��������Ķ���רע��");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "你已经参加了进行中的团队专注");
         }
         Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "���䲻����"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "房间不存在"));
         int minutes = plannedMinutes == null || plannedMinutes <= 0 ? 25
                 : Math.min(plannedMinutes, MAX_PLANNED_MINUTES);
 
@@ -83,13 +83,13 @@ public class TeamFocusService {
         requireMember(roomId, user.getId());
         TeamFocus focus = getActiveOrThrow(teamFocusId, roomId);
         if (memberRepository.existsByTeamFocusIdAndUserId(teamFocusId, user.getId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "���Ѿ��ڸö�����");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "你已经在团队专注中");
         }
         if (memberRepository.countByTeamFocusId(teamFocusId) >= MAX_MEMBERS) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "����Ѿ����ˣ���� 6 �ˣ�");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "队伍已经满了，最多 6 人");
         }
         if (memberRepository.countActiveByUserId(user.getId()) > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "���Ѿ��������Ķ���רע��");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "你已经参加了进行中的团队专注");
         }
         addMember(focus, user);
         broadcast(focus);
@@ -101,9 +101,9 @@ public class TeamFocusService {
         requireMember(roomId, user.getId());
         TeamFocus focus = getActiveOrThrow(teamFocusId, roomId);
         TeamFocusMember member = memberRepository.findByTeamFocusIdAndUserId(teamFocusId, user.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "�㲻�ڸö�����"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "你不在该队伍中"));
         if (member.getEndedAt() != null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "���Ѿ������˶���רע");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "你已经结束了团队专注");
         }
         member.setEndedAt(LocalDateTime.now());
         member.setDurationSeconds(Duration.between(member.getJoinedAt(), member.getEndedAt()).getSeconds());
@@ -115,7 +115,7 @@ public class TeamFocusService {
 
     @Transactional
     public TeamFocusListResponse status(Long roomId) {
-        // �ε�����������ƻ�ʱ�䵽��
+        // 团队专注达到计划时间时自动结束
         teamFocusRepository.findFirstByRoomIdAndStatusOrderByStartedAtDesc(roomId, TeamFocusStatus.ACTIVE)
                 .ifPresent(this::finishIfNeeded);
         TeamFocus active = teamFocusRepository
@@ -131,9 +131,9 @@ public class TeamFocusService {
     private TeamFocus getActiveOrThrow(Long teamFocusId, Long roomId) {
         TeamFocus focus = teamFocusRepository.findById(teamFocusId)
                 .filter(f -> f.getRoom().getId().equals(roomId))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "��רע�����ڣ�"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "团队专注不存在"));
         if (focus.getStatus() != TeamFocusStatus.ACTIVE) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "�ö���רע�ѽ���");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "该团队专注已结束");
         }
         return focus;
     }
@@ -183,9 +183,9 @@ public class TeamFocusService {
             User u = m.getUser();
             long minutes = Math.max(1, seconds / 60);
             activityService.record(u.getId(), u.getUsername(), "TEAM_FOCUS_DONE",
-                    "�͡�" + focus.getRoom().getName() + "����Ҷ�һ������� " + minutes + " ���ӵĶ���רע");
-            notificationService.create(u.getId(), "TEAM_FOCUS", "����רע���� 🎉",
-                    "����Ҷӹ�ͬ����� " + minutes + " ���ӵĶ���רע", focus.getRoom().getId(),
+                    "和「" + focus.getRoom().getName() + "」的队友一起完成了 " + minutes + " 分钟的团队专注");
+            notificationService.create(u.getId(), "TEAM_FOCUS", "团队专注达成 🎉",
+                    "和队友共同完成了 " + minutes + " 分钟的团队专注", focus.getRoom().getId(),
                     "/rooms/" + focus.getRoom().getId());
             gamificationService.awardTeamFocusBadge(u);
         }
@@ -214,7 +214,7 @@ public class TeamFocusService {
 
     private void requireMember(Long roomId, Long userId) {
         if (!roomMemberRepository.existsByRoomIdAndUserId(roomId, userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "���ȼ���÷���");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只有房间成员才能参与团队专注");
         }
     }
 }

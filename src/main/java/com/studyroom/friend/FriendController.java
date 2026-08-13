@@ -1,5 +1,6 @@
 package com.studyroom.friend;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
 import jakarta.validation.Valid;
@@ -20,7 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/friends")
-public class FriendController {
+public class FriendController extends CurrentUserSupport {
 
     public record SendRequest(
             @NotBlank(message = "请指定用户名")
@@ -28,11 +29,10 @@ public class FriendController {
     }
 
     private final FriendService friendService;
-    private final UserRepository userRepository;
 
     public FriendController(FriendService friendService, UserRepository userRepository) {
+        super(userRepository);
         this.friendService = friendService;
-        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -70,8 +70,4 @@ public class FriendController {
         friendService.removeFriend(currentUser(authentication), username);
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
 }

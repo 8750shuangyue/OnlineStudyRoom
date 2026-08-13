@@ -1,5 +1,6 @@
 package com.studyroom.gamification;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -14,18 +15,17 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api")
-public class GamificationController {
+public class GamificationController extends CurrentUserSupport {
 
     private final GamificationService gamificationService;
     private final GoalService goalService;
-    private final UserRepository userRepository;
 
     public GamificationController(GamificationService gamificationService,
                                   GoalService goalService,
                                   UserRepository userRepository) {
+        super(userRepository);
         this.gamificationService = gamificationService;
         this.goalService = goalService;
-        this.userRepository = userRepository;
     }
 
     @GetMapping("/achievements")
@@ -46,8 +46,4 @@ public class GamificationController {
         return goalService.updateGoal(currentUser(authentication), request.goalMinutes());
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
 }

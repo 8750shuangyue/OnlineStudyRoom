@@ -1,5 +1,6 @@
 package com.studyroom.room;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.friend.FriendService;
 import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
@@ -21,7 +22,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
-public class InviteController {
+public class InviteController extends CurrentUserSupport {
 
     private final RoomInviteRepository inviteRepository;
     private final RoomRepository roomRepository;
@@ -36,6 +37,7 @@ public class InviteController {
                             FriendService friendService,
                             UserRepository userRepository,
                             RoomService roomService) {
+        super(userRepository);
         this.inviteRepository = inviteRepository;
         this.roomRepository = roomRepository;
         this.roomMemberRepository = roomMemberRepository;
@@ -109,8 +111,4 @@ public class InviteController {
         inviteRepository.delete(invite);
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
 }

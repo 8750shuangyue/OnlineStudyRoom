@@ -1,5 +1,6 @@
 package com.studyroom.mistake;
 
+import com.studyroom.common.CurrentUserSupport;
 import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
 import jakarta.validation.Valid;
@@ -20,14 +21,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/mistakes")
-public class MistakeController {
+public class MistakeController extends CurrentUserSupport {
 
     private final MistakeService mistakeService;
-    private final UserRepository userRepository;
 
     public MistakeController(MistakeService mistakeService, UserRepository userRepository) {
+        super(userRepository);
         this.mistakeService = mistakeService;
-        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -75,8 +75,4 @@ public class MistakeController {
         return mistakeService.review(currentUser(authentication), id, request.mastered());
     }
 
-    private User currentUser(Authentication authentication) {
-        return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "用户不存在"));
-    }
 }
