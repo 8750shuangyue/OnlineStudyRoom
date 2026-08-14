@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { api } from '../api.js'
+import { api, copyText } from '../api.js'
 import { useAuth } from '../auth.jsx'
 import { useStomp } from '../useStomp.js'
 import { markRoomRead } from '../useUnread.js'
@@ -513,7 +513,7 @@ export default function RoomPage() {
   async function copyRoomLink() {
     try {
       const { code } = await api(`/api/rooms/${id}/invite-code`)
-      await navigator.clipboard.writeText(`${window.location.origin}/join/${code}`)
+      await copyText(`${window.location.origin}/join/${code}`)
       setLinkCopied(true)
       setTimeout(() => setLinkCopied(false), 2000)
       setError('')

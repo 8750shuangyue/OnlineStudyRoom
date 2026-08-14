@@ -29,6 +29,26 @@ export function clearTokens() {
   localStorage.removeItem(REFRESH_KEY)
 }
 
+/**
+ * 复制文本到剪贴板。HTTPS / localhost 用 Clipboard API；
+ * 纯 HTTP 环境降级为隐藏 textarea + execCommand（老浏览器兼容）。
+ */
+export async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.setAttribute('readonly', '')
+  textarea.style.position = 'fixed'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.select()
+  document.execCommand('copy')
+  document.body.removeChild(textarea)
+}
+
 async function refreshAccessToken() {
   const refreshToken = getRefreshToken()
   if (!refreshToken) {

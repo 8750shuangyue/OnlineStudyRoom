@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { api } from '../api.js'
+import { api, copyText } from '../api.js'
 import { BADGE_ICONS, SEASON_ICONS } from '../badges.js'
 
 function roundRect(ctx, x, y, w, h, r) {
@@ -125,7 +125,7 @@ export default function PublicCardPage() {
   async function copyLink() {
     const url = window.location.href
     try {
-      await navigator.clipboard.writeText(url)
+      await copyText(url)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
