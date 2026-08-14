@@ -13,6 +13,8 @@ import com.studyroom.user.User;
 import com.studyroom.user.UserRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +51,12 @@ public class RoomController extends CurrentUserSupport {
     public record TransferRequest(
             @NotBlank(message = "请指定新房主")
             String username) {
+    }
+
+    public record MuteRequest(
+            @Min(value = 0, message = "禁言时长不能为负数")
+            @Max(value = 1440, message = "禁言最长 24 小时")
+            int minutes) {
     }
 
     public record TutorRequest(
@@ -203,6 +211,15 @@ public class RoomController extends CurrentUserSupport {
                                    @Valid @RequestBody KickRequest request,
                                    Authentication authentication) {
         return roomService.kickMember(currentUser(authentication), id, request.username().trim());
+    }
+
+    @PostMapping("/{id}/members/{username}/mute")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void mute(@PathVariable Long id,
+                     @PathVariable String username,
+                     @Valid @RequestBody MuteRequest request,
+                     Authentication authentication) {
+        roomService.muteMember(currentUser(authentication), id, username, request.minutes());
     }
 
     /** AI 房间助教：仅房间成员可用，且房主已开启。 */

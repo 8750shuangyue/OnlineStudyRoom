@@ -48,6 +48,32 @@ public class WeeklyChallengeService {
         }
     }
 
+    /** 周三 20:00：提醒房间成员本周目标进度。 */
+    @Scheduled(cron = "0 0 20 * * 3")
+    public void weeklyProgressReminder() {
+        LocalDate weekStart = LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1);
+        LocalDateTime from = weekStart.atStartOfDay();
+        for (Room room : roomRepository.findByWeeklyGoalMinutesGreaterThan(0)) {
+            try {
+                remindProgress(room, from);
+            } catch (Exception e) {
+                log.warn("周进度提醒失败 roomId={}: {}", room.getId(), e.getMessage());
+            }
+        }
+    }
+
+    private void remindProgress(Room room, LocalDateTime from) {
+        long minutes = statsService.roomLeaderboard(room.getId(), "week", "minutes").stream()
+                .mapToLong(LeaderboardEntry::value).sum();
+        int goal = room.getWeeklyGoalMinutes();
+        String body = "本周「" + room.getName() + "」已专注 " + minutes + " / " + goal
+                + " 分钟，还差 " + Math.max(0, goal - minutes) + " 分钟，继续加油！";
+        for (RoomMember member : roomMemberRepository.findByRoomIdOrderByJoinedAtAsc(room.getId())) {
+            notificationService.create(member.getUser().getId(), "WEEKLY_PROGRESS",
+                    "本周进度提醒", body, room.getId(), "/rooms/" + room.getId());
+        }
+    }
+
     private void notifyRoomSummary(Room room, LocalDateTime from) {
         List<LeaderboardEntry> top = statsService.roomLeaderboard(room.getId(), "week", "minutes");
         long totalMinutes = top.stream().mapToLong(LeaderboardEntry::value).sum();

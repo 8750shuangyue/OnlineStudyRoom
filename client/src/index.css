@@ -819,6 +819,38 @@ button.link-btn:hover {
   font-size: 14px;
 }
 
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.task-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.task-info b {
+  font-size: 14px;
+}
+
+.task-info span {
+  font-size: 12px;
+}
+
 /* ============ 打印 / 导出 PDF ============ */
 .print-table {
   width: 100%;

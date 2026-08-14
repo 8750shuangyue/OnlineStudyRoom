@@ -34,6 +34,8 @@ public class RoomMember {
     @Column(nullable = false)
     private LocalDateTime joinedAt;
 
+    private LocalDateTime mutedUntil;
+
     public Long getId() {
         return id;
     }
@@ -60,5 +62,13 @@ public class RoomMember {
 
     public void setJoinedAt(LocalDateTime joinedAt) {
         this.joinedAt = joinedAt;
+    }
+
+    public LocalDateTime getMutedUntil() {
+        return mutedUntil;
+    }
+
+    public void setMutedUntil(LocalDateTime mutedUntil) {
+        this.mutedUntil = mutedUntil;
     }
 }

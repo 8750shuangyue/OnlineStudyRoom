@@ -212,6 +212,19 @@ public class RoomService {
         return getRoomDetail(roomId);
     }
 
+    @Transactional
+    public void muteMember(User owner, Long roomId, String username, int minutes) {
+        Room room = getRoomOrThrow(roomId);
+        requireOwner(owner, room);
+        if (room.getOwner().getUsername().equals(username)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "不能禁言房主");
+        }
+        RoomMember member = roomMemberRepository.findByRoomIdAndUserUsername(roomId, username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "该用户不是房间成员"));
+        member.setMutedUntil(minutes <= 0 ? null : LocalDateTime.now().plusMinutes(minutes));
+        roomMemberRepository.save(member);
+    }
+
     private Room getRoomOrThrow(Long roomId) {
         return roomRepository.findById(roomId)
                 .filter(Room::isActive)

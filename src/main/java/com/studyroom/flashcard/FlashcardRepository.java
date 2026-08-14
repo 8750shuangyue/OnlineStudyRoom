@@ -12,4 +12,6 @@ public interface FlashcardRepository extends JpaRepository<Flashcard, Long> {
     List<Flashcard> findByUserIdAndDueAtLessThanEqualOrderByDueAtAsc(Long userId, LocalDateTime now);
 
     long countByUserIdAndDueAtLessThanEqual(Long userId, LocalDateTime now);
+
+    long countByUserIdAndLastReviewedAtGreaterThanEqual(Long userId, LocalDateTime from);
 }

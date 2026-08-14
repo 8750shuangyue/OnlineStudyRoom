@@ -13,4 +13,6 @@ public interface MistakeRepository extends JpaRepository<Mistake, Long> {
             Long userId, LocalDateTime now);
 
     long countByUserIdAndNextReviewAtLessThanEqual(Long userId, LocalDateTime now);
+
+    long countByUserIdAndLastReviewedAtGreaterThanEqual(Long userId, LocalDateTime from);
 }

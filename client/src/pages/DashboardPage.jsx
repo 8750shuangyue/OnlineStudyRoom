@@ -37,12 +37,12 @@ export default function DashboardPage() {
   const [activeSession, setActiveSession] = useState(null)
   const [trend, setTrend] = useState([])
   const [activities, setActivities] = useState([])
-  const [checkin, setCheckin] = useState(null)
+  const [tasks, setTasks] = useState(null)
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
     try {
-      const [s, g, a, r, inv, fr, sess, t, feed, ck] = await Promise.all([
+      const [s, g, a, r, inv, fr, sess, t, feed, tk] = await Promise.all([
         api('/api/stats/me'),
         api('/api/goals'),
         api('/api/achievements'),
@@ -52,7 +52,7 @@ export default function DashboardPage() {
         api('/api/sessions/active'),
         api('/api/stats/trend?days=7'),
         api('/api/feed'),
-        api('/api/checkins')
+        api('/api/tasks/daily')
       ])
       setStats(s)
       setGoal(g)
@@ -63,16 +63,17 @@ export default function DashboardPage() {
       setActiveSession(sess)
       setTrend(t)
       setActivities(feed.map((a) => ({ ...a, relative: formatRelative(a.createdAt) })))
-      setCheckin(ck)
+      setTasks(tk)
     } catch (err) {
       setError(err.message)
     }
   }, [])
 
-  async function doCheckIn() {
+  async function claimTask(key) {
     setError('')
     try {
-      setCheckin(await api('/api/checkins', { method: 'POST' }))
+      const claimed = await api('/api/tasks/daily/claim', { method: 'POST', body: { key } })
+      setTasks((prev) => prev.map((t) => (t.key === key ? claimed : t)))
     } catch (err) {
       setError(err.message)
     }
@@ -162,22 +163,29 @@ export default function DashboardPage() {
           </div>
 
           <div className="card dash-card">
-            <h3>📅 每日签到</h3>
-            {checkin ? (
-              <>
-                <div className="checkin-streak">
-                  <b>{checkin.streak}</b>
-                  <span>连续天数</span>
-                </div>
-                <p className="muted">累计 {checkin.total} 天 · 每次 +10 XP</p>
-                {checkin.checkedToday ? (
-                  <p className="ok">✅ 今日已签到</p>
-                ) : (
-                  <button className="btn" onClick={doCheckIn}>
-                    ✅ 今日签到
-                  </button>
-                )}
-              </>
+            <h3>📅 今日任务</h3>
+            {tasks ? (
+              <div className="task-list">
+                {tasks.map((t) => (
+                  <div className="task-item" key={t.key}>
+                    <div className="task-info">
+                      <b>{t.title}</b>
+                      <span className="muted">{t.desc}</span>
+                    </div>
+                    {t.rewarded ? (
+                      <span className="ok">已领取 +10 XP</span>
+                    ) : t.done ? (
+                      <button className="btn tiny" onClick={() => claimTask(t.key)}>
+                        领取 +10 XP
+                      </button>
+                    ) : (
+                      <span className="muted">
+                        {t.progress}/{t.target}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             ) : (
               <p className="muted">加载中...</p>
             )}

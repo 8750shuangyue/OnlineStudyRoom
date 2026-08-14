@@ -364,6 +364,22 @@ export default function RoomPage() {
     }
   }
 
+  async function mute(name) {
+    const minutes = window.prompt(`禁言 ${name} 多少分钟？（0 = 解除禁言）`, '30')
+    if (minutes === null) {
+      return
+    }
+    try {
+      await api(`/api/rooms/${id}/members/${encodeURIComponent(name)}/mute`, {
+        method: 'POST',
+        body: { minutes: Number(minutes) || 0 }
+      })
+      setError('')
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   async function startTeamFocus() {
     setTeamBusy(true)
     setError('')
@@ -1078,9 +1094,14 @@ export default function RoomPage() {
                   {focusMap[name] && <span className="focus-badge">专注中</span>}
                 </span>
                 {isOwner && name !== room.ownerUsername && (
-                  <button className="btn tiny danger ghost" onClick={() => kick(name)}>
-                    移除
-                  </button>
+                  <>
+                    <button className="btn tiny secondary" onClick={() => mute(name)}>
+                      禁言
+                    </button>
+                    <button className="btn tiny danger ghost" onClick={() => kick(name)}>
+                      移除
+                    </button>
+                  </>
                 )}
               </li>
             ))}

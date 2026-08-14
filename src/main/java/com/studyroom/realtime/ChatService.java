@@ -1,6 +1,7 @@
 package com.studyroom.realtime;
 
 import com.studyroom.room.Room;
+import com.studyroom.room.RoomMember;
 import com.studyroom.room.RoomMemberRepository;
 import com.studyroom.room.RoomRepository;
 import com.studyroom.notification.NotificationService;
@@ -53,6 +54,11 @@ public class ChatService {
     @Transactional
     public ChatMessage send(Long roomId, String username, String content) {
         if (!roomMemberRepository.existsByRoomIdAndUserUsername(roomId, username)) {
+            return null;
+        }
+        RoomMember member = roomMemberRepository.findByRoomIdAndUserUsername(roomId, username).orElse(null);
+        if (member != null && member.getMutedUntil() != null
+                && member.getMutedUntil().isAfter(LocalDateTime.now())) {
             return null;
         }
         String trimmed = content == null ? "" : content.trim();
