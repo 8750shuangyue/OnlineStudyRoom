@@ -59,6 +59,10 @@ public class RoomController extends CurrentUserSupport {
             int minutes) {
     }
 
+    public record JoinByCodeRequest(
+            @NotBlank(message = "缺少邀请码") String code) {
+    }
+
     public record TutorRequest(
             @NotBlank(message = "消息不能为空")
             String message) {
@@ -171,6 +175,17 @@ public class RoomController extends CurrentUserSupport {
         }
         int progress = goal > 0 ? Math.min(100, (int) Math.round(total * 100.0 / goal)) : 0;
         return new ChallengeResponse(goal, total, progress, goal > 0 && total >= goal);
+    }
+
+    @GetMapping("/{id}/invite-code")
+    public Map<String, String> inviteCode(@PathVariable Long id, Authentication authentication) {
+        return Map.of("code", roomService.inviteCode(currentUser(authentication), id));
+    }
+
+    @PostMapping("/join-by-code")
+    public RoomResponse joinByCode(@Valid @RequestBody JoinByCodeRequest request,
+                                   Authentication authentication) {
+        return roomService.joinByCode(currentUser(authentication), request.code().trim());
     }
 
     @PostMapping("/{id}/join")

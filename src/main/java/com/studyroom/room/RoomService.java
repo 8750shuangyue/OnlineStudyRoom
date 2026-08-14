@@ -45,6 +45,7 @@ public class RoomService {
         room.setAiTutorEnabled(Boolean.TRUE.equals(request.aiTutorEnabled()));
         room.setTutorPersona(trimToNull(request.tutorPersona()));
         room.setWeeklyGoalMinutes(normalizeMinutes(request.weeklyGoalMinutes(), 100000));
+        room.setInviteCode(generateInviteCode());
         room.setOwner(owner);
         room.setCreatedAt(LocalDateTime.now());
         room = roomRepository.save(room);
@@ -58,6 +59,43 @@ public class RoomService {
         chatService.markReadOnJoin(room.getId(), owner.getId());
 
         return toResponse(room);
+    }
+
+    @Transactional
+    public String inviteCode(User user, Long roomId) {
+        Room room = getRoomOrThrow(roomId);
+        if (!roomMemberRepository.existsByRoomIdAndUserId(roomId, user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只有房间成员能获取邀请链接");
+        }
+        if (room.getInviteCode() == null) {
+            room.setInviteCode(generateInviteCode());
+            roomRepository.save(room);
+        }
+        return room.getInviteCode();
+    }
+
+    @Transactional
+    public RoomResponse joinByCode(User user, String code) {
+        Room room = roomRepository.findByInviteCode(code)
+                .filter(Room::isActive)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "邀请码无效或房间已解散"));
+        return joinAsMember(user, room, false);
+    }
+
+    private String generateInviteCode() {
+        String alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+        java.security.SecureRandom random = new java.security.SecureRandom();
+        for (int attempt = 0; attempt < 20; attempt++) {
+            StringBuilder sb = new StringBuilder(8);
+            for (int i = 0; i < 8; i++) {
+                sb.append(alphabet.charAt(random.nextInt(alphabet.length())));
+            }
+            String code = sb.toString();
+            if (roomRepository.findByInviteCode(code).isEmpty()) {
+                return code;
+            }
+        }
+        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "邀请码生成失败，请重试");
     }
 
     @Transactional(readOnly = true)

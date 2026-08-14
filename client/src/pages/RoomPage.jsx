@@ -512,7 +512,8 @@ export default function RoomPage() {
 
   async function copyRoomLink() {
     try {
-      await navigator.clipboard.writeText(window.location.href)
+      const { code } = await api(`/api/rooms/${id}/invite-code`)
+      await navigator.clipboard.writeText(`${window.location.origin}/join/${code}`)
       setLinkCopied(true)
       setTimeout(() => setLinkCopied(false), 2000)
       setError('')
@@ -728,7 +729,7 @@ export default function RoomPage() {
                   同步专注
                 </button>
                 <button className="btn secondary" onClick={copyRoomLink}>
-                  {linkCopied ? '已复制' : '复制链接'}
+                  {linkCopied ? '已复制' : '邀请链接'}
                 </button>
                 <button className="btn secondary" onClick={openInvite}>
                   邀请好友

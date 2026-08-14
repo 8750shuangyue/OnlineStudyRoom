@@ -24,6 +24,9 @@ public class Room {
     @Column(nullable = false, length = 50)
     private String name;
 
+    @Column(name = "invite_code", length = 12, unique = true)
+    private String inviteCode;
+
     @Column(length = 30)
     private String category;
 
@@ -73,6 +76,14 @@ public class Room {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getInviteCode() {
+        return inviteCode;
+    }
+
+    public void setInviteCode(String inviteCode) {
+        this.inviteCode = inviteCode;
     }
 
     public String getCategory() {

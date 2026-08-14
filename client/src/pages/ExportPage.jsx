@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
-import { api } from '../api.js'
+import { api, getToken } from '../api.js'
 
 const TITLES = { notes: '我的笔记', mistakes: '我的错题', report: '学习报告' }
 
@@ -17,6 +17,27 @@ export default function ExportPage() {
   const { type } = useParams()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
+
+  async function downloadCsv() {
+    setError('')
+    try {
+      const resp = await fetch('/api/export/sessions.csv', {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      })
+      if (!resp.ok) {
+        throw new Error(`导出失败（HTTP ${resp.status}）`)
+      }
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'study-sessions.csv'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   useEffect(() => {
     let alive = true
@@ -102,7 +123,12 @@ export default function ExportPage() {
           {type === 'report' && data.stats && (
             <div>
               <section>
-                <h2>学习概况</h2>
+                <div className="row-between">
+                  <h2>学习概况</h2>
+                  <button className="btn tiny secondary no-print" onClick={downloadCsv}>
+                    ⬇ 导出 CSV
+                  </button>
+                </div>
                 <table className="print-table">
                   <tbody>
                     <tr>

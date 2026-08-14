@@ -23,6 +23,7 @@ const MessageCenterPage = lazy(() => import('./pages/MessageCenterPage.jsx'))
 const NotesPage = lazy(() => import('./pages/NotesPage.jsx'))
 const ExportPage = lazy(() => import('./pages/ExportPage.jsx'))
 const HelpPage = lazy(() => import('./pages/HelpPage.jsx'))
+const JoinInvitePage = lazy(() => import('./pages/JoinInvitePage.jsx'))
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/u/:username" element={<PublicCardPage />} />
+        <Route path="/join/:code" element={<JoinInvitePage />} />
         <Route
           path="/"
           element={
