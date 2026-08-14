@@ -49,6 +49,8 @@ public class AuthService {
      * 用刷新令牌换取新的访问令牌与刷新令牌（轮换机制）。
      */
     public AuthResponse refresh(String refreshToken) {
+        // 无状态 JWT：刷新令牌轮换会签发新令牌，但旧令牌没有集中吊销机制，只能等其自然过期（默认 30 天）。
+        // 若未来需要「强制下线 / 踢出设备」，需引入黑名单（如 Redis）或会话状态表。
         String username = jwtService.extractUsername(refreshToken);
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "刷新令牌无效"));

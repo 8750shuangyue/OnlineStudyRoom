@@ -179,4 +179,52 @@ class TeamAndSeasonTests {
                 .andExpect(jsonPath("$.stats.level").isNumber())
                 .andExpect(jsonPath("$.badges").isArray());
     }
+
+    @Test
+    void teamFocusRejectsInvalidTransitions() throws Exception {
+        String owner = register("tferr_owner");
+        String member = register("tferr_member");
+        String stranger = register("tferr_stranger");
+        long roomId = createRoom(owner, "conflict-room");
+        joinRoom(member, roomId);
+
+        // 非房间成员不能发起团队专注
+        mockMvc.perform(post("/api/rooms/" + roomId + "/team-focus/start")
+                        .header("Authorization", "Bearer " + stranger)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"plannedMinutes\":15}"))
+                .andExpect(status().isForbidden());
+
+        String startJson = mockMvc.perform(post("/api/rooms/" + roomId + "/team-focus/start")
+                        .header("Authorization", "Bearer " + owner)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"plannedMinutes\":15}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long teamId = ((Number) JsonPath.read(startJson, "$.id")).longValue();
+
+        // 已有进行中的团队专注时不能再次发起
+        mockMvc.perform(post("/api/rooms/" + roomId + "/team-focus/start")
+                        .header("Authorization", "Bearer " + owner)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"plannedMinutes\":15}"))
+                .andExpect(status().isConflict());
+
+        // 成员重复加入被拒绝；非房间成员不能加入
+        mockMvc.perform(post("/api/rooms/" + roomId + "/team-focus/" + teamId + "/join")
+                        .header("Authorization", "Bearer " + member))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/rooms/" + roomId + "/team-focus/" + teamId + "/join")
+                        .header("Authorization", "Bearer " + member))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/api/rooms/" + roomId + "/team-focus/" + teamId + "/join")
+                        .header("Authorization", "Bearer " + stranger))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void unknownUserPublicCardReturns404() throws Exception {
+        mockMvc.perform(get("/api/users/nobody-here/card"))
+                .andExpect(status().isNotFound());
+    }
 }

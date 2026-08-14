@@ -65,6 +65,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- 数据库迁移（Flyway）：替代手写 SchemaMigration，schema 变更走可审计的迁移脚本 -->
+        <!-- Spring Boot 4 将 Flyway 自动配置拆到独立 starter，仅引入 flyway-core 不会自动执行迁移 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
+        </dependency>
+
         <!-- JWT 库（Nimbus，Spring Security 官方同款实现） -->
         <dependency>
             <groupId>com.nimbusds</groupId>
