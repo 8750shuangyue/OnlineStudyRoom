@@ -9,5 +9,6 @@ public record RoomResponse(
         boolean hasPassword,
         String ownerUsername,
         long memberCount,
-        LocalDateTime createdAt) {
+        LocalDateTime createdAt,
+        Integer weeklyGoalMinutes) {
 }

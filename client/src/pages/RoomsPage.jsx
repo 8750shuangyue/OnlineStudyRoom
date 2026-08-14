@@ -224,6 +224,11 @@ export default function RoomsPage() {
               </div>
               <div className="room-meta">
                 {room.category && <span className="mini-chip">{room.category}</span>}
+                {room.weeklyGoalMinutes > 0 && (
+                  <span className="mini-chip goal-chip">
+                    🎯 周目标 {room.weeklyGoalMinutes} 分钟
+                  </span>
+                )}
                 <span className="muted">
                   房主 {room.ownerUsername} · {room.memberCount} 人
                 </span>

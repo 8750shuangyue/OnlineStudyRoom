@@ -245,7 +245,8 @@ public class RoomService {
         long memberCount = counts.getOrDefault(room.getId(), 0L);
         return new RoomResponse(room.getId(), room.getName(), room.getCategory(),
                 room.getPassword() != null, room.getOwner().getUsername(),
-                memberCount, room.getCreatedAt());
+                memberCount, room.getCreatedAt(),
+                room.getWeeklyGoalMinutes() == null ? 0 : room.getWeeklyGoalMinutes());
     }
 
     private Map<Long, Long> memberCounts(List<Room> rooms) {

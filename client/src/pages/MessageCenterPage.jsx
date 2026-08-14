@@ -133,7 +133,7 @@ export default function MessageCenterPage() {
             {briefs.slice(0, 3).map((b) => (
               <div className="msg-item" key={b.id}>
                 <div className="msg-title">
-                  📋 {b.title}
+                  {b.type === 'WEEKLY_REPORT' ? '📊' : '📋'} {b.title}
                   <span className="msg-time">{formatTime(b.createdAt)}</span>
                 </div>
                 <div className="msg-body">{b.body}</div>

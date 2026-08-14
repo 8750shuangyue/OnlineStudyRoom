@@ -860,6 +860,12 @@ button.link-btn:hover {
   line-height: 1.6;
 }
 
+.goal-chip {
+  background: rgba(251, 191, 36, 0.14);
+  border-color: rgba(251, 191, 36, 0.4);
+  color: #fbbf24;
+}
+
 /* ============ 打印 / 导出 PDF ============ */
 .print-table {
   width: 100%;
