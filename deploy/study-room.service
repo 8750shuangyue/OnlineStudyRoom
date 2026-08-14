@@ -6,9 +6,11 @@ After=network.target
 Type=simple
 User=studyroom
 WorkingDirectory=/opt/study-room
+Environment=SPRING_PROFILES_ACTIVE=prod
 ExecStart=/usr/bin/java -jar /opt/study-room/study-room.jar
 Restart=on-failure
 RestartSec=5
+TimeoutStopSec=30
 # 密钥建议用 EnvironmentFile（配合部署脚本自动生成），不要硬编码在服务文件里
 EnvironmentFile=/opt/study-room/.env
 

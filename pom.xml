@@ -110,6 +110,12 @@
             <version>3.1.0</version>
         </dependency>
 
+        <!-- 监控：Prometheus 指标（生产 profile 下暴露 /actuator/prometheus） -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
         <!-- Web Push：浏览器推送通知（VAPID 签名 + 负载加密） -->
         <dependency>
             <groupId>nl.martijndwars</groupId>
