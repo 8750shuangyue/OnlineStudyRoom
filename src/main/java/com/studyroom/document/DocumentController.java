@@ -62,4 +62,9 @@ public class DocumentController extends CurrentUserSupport {
         documentService.delete(currentUser(authentication), id);
     }
 
+    @PostMapping("/{id}/rechunk")
+    public DocumentResponse rechunk(@PathVariable Long id, Authentication authentication) {
+        return documentService.rechunk(currentUser(authentication), id);
+    }
+
 }

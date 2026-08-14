@@ -8,6 +8,7 @@ import com.studyroom.gamification.GamificationService;
 import com.studyroom.task.Task;
 import com.studyroom.task.TaskRepository;
 import com.studyroom.activity.ActivityService;
+import com.studyroom.push.WebPushService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class StudyService {
     private final GamificationService gamificationService;
     private final TaskRepository taskRepository;
     private final ActivityService activityService;
+    private final WebPushService webPushService;
 
     public StudyService(StudySessionRepository studySessionRepository,
                         RoomRepository roomRepository,
@@ -35,7 +37,8 @@ public class StudyService {
                         SimpMessagingTemplate messagingTemplate,
                         GamificationService gamificationService,
                         TaskRepository taskRepository,
-                        ActivityService activityService) {
+                        ActivityService activityService,
+                        WebPushService webPushService) {
         this.studySessionRepository = studySessionRepository;
         this.roomRepository = roomRepository;
         this.roomMemberRepository = roomMemberRepository;
@@ -43,6 +46,7 @@ public class StudyService {
         this.gamificationService = gamificationService;
         this.taskRepository = taskRepository;
         this.activityService = activityService;
+        this.webPushService = webPushService;
     }
 
     @Transactional
@@ -101,6 +105,12 @@ public class StudyService {
             activityService.record(user.getId(), user.getUsername(), "FOCUS_DONE",
                     "在「" + session.getRoom().getName() + "」完成 "
                             + Math.max(1, session.getDurationSeconds() / 60) + " 分钟专注");
+        }
+        if (valid) {
+            webPushService.sendToUser(user.getId(), "专注完成",
+                    "在「" + session.getRoom().getName() + "」完成了 "
+                            + Math.max(1, session.getDurationSeconds() / 60) + " 分钟专注",
+                    "/stats");
         }
         broadcastFocus(session, "STOP");
         return toResponse(session);

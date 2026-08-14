@@ -49,8 +49,9 @@ public class AiBriefService {
     /** 每天早上 7:30 给近 7 天有学习记录的用户生成简报。 */
     @Scheduled(cron = "0 30 7 * * *")
     public void scheduledDailyBriefs() {
-        LocalDateTime from = LocalDate.now().minusDays(7).atStartOfDay();
-        List<Long> userIds = studySessionRepository.distinctUserIdsSince(from);
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        List<Long> userIds = studySessionRepository.distinctUserIdsBetween(
+                yesterday.atStartOfDay(), yesterday.plusDays(1).atStartOfDay());
         for (Long userId : userIds) {
             try {
                 dailyBriefForUserId(userId);
@@ -98,7 +99,7 @@ public class AiBriefService {
         return brief;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public String weeklyReport(User user) {
         LocalDate weekStart = LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1);
         LocalDateTime from = weekStart.atStartOfDay();
@@ -121,7 +122,50 @@ public class AiBriefService {
                 - 当前连续打卡 %d 天
                 - 待复习：错题 %d 道，知识卡片 %d 张
                 """.formatted(weekStart, sessions, totalMinutes, activeDays, streak, dueMistakes, dueCards);
-        return aiService.askOnce(prompt);
+        String report = aiService.askOnce(prompt);
+        notificationService.create(user.getId(), "WEEKLY_REPORT", "每周学习报告", report, null, "/messages");
+        return report;
+    }
+
+    /** 每周日 20:00 给本周有学习记录的用户生成周报并推送站内信。 */
+    @Scheduled(cron = "0 0 20 * * 0")
+    public void scheduledWeeklyReports() {
+        LocalDate weekStart = LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1);
+        List<Long> userIds = studySessionRepository.distinctUserIdsSince(weekStart.atStartOfDay());
+        for (Long userId : userIds) {
+            try {
+                weeklyReportForUserId(userId);
+            } catch (Exception e) {
+                log.warn("生成周度报告失败 userId={}", userId, e);
+            }
+        }
+    }
+
+    @Transactional
+    public String weeklyReportForUserId(Long userId) {
+        LocalDate weekStart = LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1);
+        LocalDateTime from = weekStart.atStartOfDay();
+        Map<LocalDate, Long> minutesByDay = secondsByDay(userId, from, LocalDateTime.now());
+        long totalMinutes = minutesByDay.values().stream().mapToLong(Long::longValue).sum() / 60;
+        long sessions = studySessionRepository.countByUserIdSince(userId, from);
+        long activeDays = minutesByDay.values().stream().filter(v -> v > 0).count();
+        UserStats stats = userStatsRepository.findByUserId(userId).orElse(null);
+        int streak = stats == null ? 0 : stats.getStreak();
+        long dueMistakes = mistakeRepository.countByUserIdAndNextReviewAtLessThanEqual(
+                userId, LocalDateTime.now());
+        long dueCards = flashcardRepository.countByUserIdAndDueAtLessThanEqual(userId, LocalDateTime.now());
+
+        String prompt = """
+                你是学习助理。请基于以下本周数据，生成一份 Markdown 格式的周度学习报告：
+                包含：本周总览、亮点与问题、下周建议（至少 3 条）。
+                本周（%s 起）数据：
+                - 专注 %d 次，共 %d 分钟，活跃 %d 天
+                - 当前连续打卡 %d 天
+                - 待复习：错题 %d 道，知识卡片 %d 张
+                """.formatted(weekStart, sessions, totalMinutes, activeDays, streak, dueMistakes, dueCards);
+        String report = aiService.askOnce(prompt);
+        notificationService.create(userId, "WEEKLY_REPORT", "每周学习报告", report, null, "/messages");
+        return report;
     }
 
     private Map<LocalDate, Long> secondsByDay(Long userId, LocalDateTime from, LocalDateTime to) {

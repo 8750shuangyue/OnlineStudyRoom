@@ -33,7 +33,7 @@ export default function MessageCenterPage() {
         api('/api/rooms/unread')
       ])
       setMentions(m)
-      setBriefs(m.filter((n) => n.type === 'DAILY_BRIEF'))
+      setBriefs(m.filter((n) => n.type === 'DAILY_BRIEF' || n.type === 'WEEKLY_REPORT'))
       setInvites(inv)
       setFriendRequests(fr)
       setUnreadRooms(ur)

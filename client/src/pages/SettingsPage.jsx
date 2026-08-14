@@ -1,7 +1,23 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../api.js'
 import { getSettings, saveSettings } from '../settings.js'
 import { setTheme } from '../theme.js'
+
+function base64UrlToUint8Array(base64Url) {
+  const padding = '='.repeat((4 - (base64Url.length % 4)) % 4)
+  const base64 = (base64Url + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const raw = atob(base64)
+  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)))
+}
+
+function arrayToBase64(array) {
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < array.length; i += chunk) {
+    binary += String.fromCharCode(...array.subarray(i, i + chunk))
+  }
+  return btoa(binary)
+}
 
 export default function SettingsPage() {
   const initial = getSettings()
@@ -9,6 +25,24 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false)
   const [backupInfo, setBackupInfo] = useState('')
   const [backupBusy, setBackupBusy] = useState(false)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushInfo, setPushInfo] = useState('')
+
+  useEffect(() => {
+    async function checkPush() {
+      try {
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+          const reg = await navigator.serviceWorker.ready
+          const sub = await reg.pushManager.getSubscription()
+          setPushEnabled(!!sub)
+        }
+      } catch {
+        // 开发模式未注册 Service Worker，忽略
+      }
+    }
+    checkPush()
+  }, [])
 
   function save(e) {
     e.preventDefault()
@@ -36,9 +70,87 @@ export default function SettingsPage() {
     }
   }
 
+  async function enablePush() {
+    setPushBusy(true)
+    setPushInfo('')
+    try {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        setPushInfo('当前浏览器不支持推送通知')
+        return
+      }
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') {
+        setPushInfo('未获得通知权限')
+        return
+      }
+      const reg = await navigator.serviceWorker.ready
+      const { publicKey } = await api('/api/push/vapid-key')
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: base64UrlToUint8Array(publicKey)
+      })
+      await api('/api/push/subscribe', {
+        method: 'POST',
+        body: {
+          endpoint: sub.endpoint,
+          p256dh: arrayToBase64(new Uint8Array(sub.getKey('p256dh'))),
+          auth: arrayToBase64(new Uint8Array(sub.getKey('auth')))
+        }
+      })
+      setPushEnabled(true)
+      setPushInfo('✅ 推送通知已开启')
+    } catch (err) {
+      setPushInfo(`开启失败：${err.message}`)
+    } finally {
+      setPushBusy(false)
+    }
+  }
+
+  async function disablePush() {
+    setPushBusy(true)
+    setPushInfo('')
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      if (sub) {
+        try {
+          await api('/api/push/unsubscribe', { method: 'POST', body: { endpoint: sub.endpoint } })
+        } catch {
+          // 后端清理失败不阻塞本地退订
+        }
+        await sub.unsubscribe()
+      }
+      setPushEnabled(false)
+      setPushInfo('已关闭推送通知')
+    } catch (err) {
+      setPushInfo(`关闭失败：${err.message}`)
+    } finally {
+      setPushBusy(false)
+    }
+  }
+
   return (
     <div>
       <h2>设置</h2>
+      <div className="card settings-card">
+        <h3>🔔 推送通知（Web Push）</h3>
+        <p className="muted">
+          浏览器后台也能收到提醒（专注完成、好友上线）。需要在 HTTPS 或 localhost 下使用。
+        </p>
+        <div className="row">
+          {pushEnabled ? (
+            <button className="btn secondary" onClick={disablePush} disabled={pushBusy}>
+              {pushBusy ? '处理中...' : '关闭推送'}
+            </button>
+          ) : (
+            <button className="btn" onClick={enablePush} disabled={pushBusy}>
+              {pushBusy ? '处理中...' : '开启推送'}
+            </button>
+          )}
+          {pushInfo && <span className="muted">{pushInfo}</span>}
+        </div>
+      </div>
+
       <div className="card settings-card">
         <h3>💾 数据备份</h3>
         <p className="muted">

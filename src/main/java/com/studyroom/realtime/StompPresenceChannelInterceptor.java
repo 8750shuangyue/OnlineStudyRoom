@@ -1,5 +1,8 @@
 package com.studyroom.realtime;
 
+import com.studyroom.friend.FriendRequestRepository;
+import com.studyroom.push.WebPushService;
+import com.studyroom.user.UserRepository;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -10,6 +13,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.messaging.support.ChannelInterceptor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,11 +26,20 @@ public class StompPresenceChannelInterceptor implements ChannelInterceptor {
 
     private final PresenceService presenceService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final UserRepository userRepository;
+    private final FriendRequestRepository friendRequestRepository;
+    private final WebPushService webPushService;
 
     public StompPresenceChannelInterceptor(PresenceService presenceService,
-                                           @Lazy SimpMessagingTemplate messagingTemplate) {
+                                           @Lazy SimpMessagingTemplate messagingTemplate,
+                                           UserRepository userRepository,
+                                           FriendRequestRepository friendRequestRepository,
+                                           WebPushService webPushService) {
         this.presenceService = presenceService;
         this.messagingTemplate = messagingTemplate;
+        this.userRepository = userRepository;
+        this.friendRequestRepository = friendRequestRepository;
+        this.webPushService = webPushService;
     }
 
     @Override
@@ -36,13 +50,30 @@ public class StompPresenceChannelInterceptor implements ChannelInterceptor {
         }
         Long roomId = parseRoomId(accessor);
         String username = username(accessor);
+        boolean firstOnline = username != null && !presenceService.isOnline(username);
         if (roomId != null && username != null) {
             presenceService.registerSession(accessor.getSessionId(), roomId, username);
             int count = presenceService.join(roomId, username);
             messagingTemplate.convertAndSend("/topic/rooms/" + roomId + "/presence",
                     new PresenceMessage(username, "JOIN", count));
         }
+        if (firstOnline) {
+            notifyFriendsOnline(username);
+        }
         return message;
+    }
+
+    /** 用户从离线转为在线时，推送提醒其好友。 */
+    private void notifyFriendsOnline(String username) {
+        userRepository.findByUsername(username).ifPresent(user -> {
+            List<Long> friendIds = new ArrayList<>();
+            friendIds.addAll(friendRequestRepository.findAcceptedFriendIdsWhereTo(user.getId()));
+            friendIds.addAll(friendRequestRepository.findAcceptedFriendIdsWhereFrom(user.getId()));
+            for (Long friendId : friendIds) {
+                webPushService.sendToUser(friendId, "好友上线",
+                        username + " 上线了，一起去自习室坐坐吧", "/rooms");
+            }
+        });
     }
 
     private Long parseRoomId(StompHeaderAccessor accessor) {

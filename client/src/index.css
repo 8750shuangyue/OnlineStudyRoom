@@ -743,6 +743,43 @@ button.link-btn:hover {
   }
 }
 
+/* ============ 移动端：导航可横向滚动，避免窄屏溢出 ============ */
+@media (max-width: 720px) {
+  .navbar {
+    padding: 0 12px;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .navbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navbar a {
+    padding: 8px 10px;
+    font-size: 13px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .brand {
+    font-size: 16px;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  .username {
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  .public-card {
+    padding: 24px 18px;
+    border-radius: 22px;
+  }
+}
+
 /* ============ 第 1 天：房间管理增强 ============ */
 .search-row {
   display: flex;

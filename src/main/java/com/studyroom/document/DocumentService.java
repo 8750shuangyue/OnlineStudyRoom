@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -104,8 +106,14 @@ public class DocumentService {
 
     @Transactional(readOnly = true)
     public List<DocumentResponse> list(User user) {
-        return documentRepository.findByUserIdOrderByCreatedAtDesc(user.getId()).stream()
-                .map(this::toResponse)
+        List<Document> documents = documentRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+        Map<Long, Long> chunkCounts = new HashMap<>();
+        for (Object[] row : chunkRepository.countByDocumentIds(
+                documents.stream().map(Document::getId).toList())) {
+            chunkCounts.put((Long) row[0], (Long) row[1]);
+        }
+        return documents.stream()
+                .map(d -> toResponse(d, chunkCounts.getOrDefault(d.getId(), 0L)))
                 .toList();
     }
 
@@ -142,9 +150,25 @@ public class DocumentService {
         documentRepository.delete(document);
     }
 
+    @Transactional
+    public DocumentResponse rechunk(User user, Long documentId) {
+        Document document = documentRepository.findById(documentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "资料不存在"));
+        if (!document.getUser().getId().equals(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "只能操作自己的资料");
+        }
+        chunkRepository.deleteByDocumentId(documentId);
+        chunkRepository.saveAll(DocumentChunking.chunk(document));
+        return toResponse(document);
+    }
+
     private DocumentResponse toResponse(Document document) {
+        return toResponse(document, chunkRepository.countByDocumentId(document.getId()));
+    }
+
+    private DocumentResponse toResponse(Document document, long chunkCount) {
         return new DocumentResponse(document.getId(), document.getName(), document.getCategory(),
-                document.getContent().length(), document.getCreatedAt());
+                document.getContent().length(), document.getCreatedAt(), chunkCount);
     }
 
     private String trimToNull(String value) {

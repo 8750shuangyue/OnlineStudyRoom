@@ -160,4 +160,10 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
 
     @Query("select distinct s.user.id from StudySession s where s.startedAt >= :from")
     List<Long> distinctUserIdsSince(@Param("from") LocalDateTime from);
+
+    @Query("""
+            select distinct s.user.id from StudySession s
+            where s.startedAt >= :from and s.startedAt < :to
+            """)
+    List<Long> distinctUserIdsBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

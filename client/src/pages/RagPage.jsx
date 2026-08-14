@@ -70,6 +70,16 @@ export default function RagPage() {
     }
   }
 
+  async function rechunkDoc(doc) {
+    setError('')
+    try {
+      await api(`/api/documents/${doc.id}/rechunk`, { method: 'POST' })
+      await load()
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   async function saveDoc(e) {
     e.preventDefault()
     setError('')
@@ -142,6 +152,7 @@ export default function RagPage() {
               <span className="friend-name">
                 📄 {doc.name}
                 <span className="muted"> · {doc.charCount} 字</span>
+                <span className="muted"> · 已索引 {doc.chunkCount ?? 0} 段</span>
                 {doc.category && <span className="mini-chip">{doc.category}</span>}
               </span>
               <button
@@ -155,6 +166,9 @@ export default function RagPage() {
               </button>
               <button className="btn tiny danger ghost" onClick={() => removeDoc(doc)}>
                 删除
+              </button>
+              <button className="btn tiny secondary" onClick={() => rechunkDoc(doc)}>
+                重新切分
               </button>
             </div>
           ))

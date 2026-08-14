@@ -34,7 +34,10 @@ public class SecurityConfig {
                                 "/api/users/*/card").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // 静态页面放行
-                        .requestMatchers("/", "/index.html", "/static/**", "/favicon.ico", "/error").permitAll()
+                        .requestMatchers("/", "/index.html", "/static/**",
+                                "/assets/**", "/sw.js", "/manifest.webmanifest",
+                                "/icon-192.png", "/icon-512.png", "/maskable-512.png",
+                                "/favicon.ico", "/error").permitAll()
                         // 其余接口（未来的房间、计时等）需要登录
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, authException) -> {

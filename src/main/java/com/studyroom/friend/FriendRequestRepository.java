@@ -35,4 +35,16 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, Lo
               and ((fr.from.id = :a and fr.to.id = :b) or (fr.from.id = :b and fr.to.id = :a))
             """)
     Optional<FriendRequest> findAcceptedBetween(@Param("a") Long a, @Param("b") Long b);
+
+    @Query("""
+            select fr.from.id from FriendRequest fr
+            where fr.status = com.studyroom.friend.FriendStatus.ACCEPTED and fr.to.id = :userId
+            """)
+    List<Long> findAcceptedFriendIdsWhereTo(@Param("userId") Long userId);
+
+    @Query("""
+            select fr.to.id from FriendRequest fr
+            where fr.status = com.studyroom.friend.FriendStatus.ACCEPTED and fr.from.id = :userId
+            """)
+    List<Long> findAcceptedFriendIdsWhereFrom(@Param("userId") Long userId);
 }

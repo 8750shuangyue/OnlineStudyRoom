@@ -7,5 +7,6 @@ public record DocumentResponse(
         String name,
         String category,
         int charCount,
-        LocalDateTime createdAt) {
+        LocalDateTime createdAt,
+        long chunkCount) {
 }
