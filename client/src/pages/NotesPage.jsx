@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { api, getToken } from '../api.js'
 import Modal from '../components/Modal.jsx'
 import ReactMarkdown from 'react-markdown'
@@ -153,9 +154,14 @@ export default function NotesPage() {
     <div>
       <div className="row-between">
         <h2>我的笔记</h2>
+        <div className="row">
+          <Link className="btn secondary" to="/export/notes">
+            📄 导出 PDF
+          </Link>
         <button className="btn secondary" onClick={exportMarkdown}>
           ⬇ 导出 Markdown
         </button>
+        </div>
       </div>
       {error && <p className="error">{error}</p>}
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router'
 import { api } from '../api.js'
 import Modal from '../components/Modal.jsx'
 import ReactMarkdown from 'react-markdown'
@@ -129,6 +130,9 @@ export default function MistakePage() {
     <div>
       <div className="row-between">
         <h2>我的错题本</h2>
+        <Link className="btn secondary" to="/export/mistakes">
+          📄 导出 PDF
+        </Link>
         <button
           onClick={() => {
             setForm(EMPTY)

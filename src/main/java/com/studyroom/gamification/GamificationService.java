@@ -136,6 +136,11 @@ public class GamificationService {
         });
     }
 
+    @Transactional
+    public UserStats saveStats(UserStats stats) {
+        return userStatsRepository.save(stats);
+    }
+
     private UserStatsResponse toStatsResponse(User user, UserStats stats) {
         long totalMinutes = studySessionRepository.totalDurationSecondsByUserId(user.getId()) / 60;
         long todayMinutes = studySessionRepository

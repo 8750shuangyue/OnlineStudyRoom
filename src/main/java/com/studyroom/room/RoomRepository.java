@@ -23,4 +23,6 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
             order by r.category
             """)
     List<String> findDistinctCategories();
+
+    List<Room> findByWeeklyGoalMinutesGreaterThan(Integer goal);
 }

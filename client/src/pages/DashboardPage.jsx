@@ -37,11 +37,12 @@ export default function DashboardPage() {
   const [activeSession, setActiveSession] = useState(null)
   const [trend, setTrend] = useState([])
   const [activities, setActivities] = useState([])
+  const [checkin, setCheckin] = useState(null)
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
     try {
-      const [s, g, a, r, inv, fr, sess, t, feed] = await Promise.all([
+      const [s, g, a, r, inv, fr, sess, t, feed, ck] = await Promise.all([
         api('/api/stats/me'),
         api('/api/goals'),
         api('/api/achievements'),
@@ -50,7 +51,8 @@ export default function DashboardPage() {
         api('/api/friends/requests'),
         api('/api/sessions/active'),
         api('/api/stats/trend?days=7'),
-        api('/api/feed')
+        api('/api/feed'),
+        api('/api/checkins')
       ])
       setStats(s)
       setGoal(g)
@@ -61,10 +63,20 @@ export default function DashboardPage() {
       setActiveSession(sess)
       setTrend(t)
       setActivities(feed.map((a) => ({ ...a, relative: formatRelative(a.createdAt) })))
+      setCheckin(ck)
     } catch (err) {
       setError(err.message)
     }
   }, [])
+
+  async function doCheckIn() {
+    setError('')
+    try {
+      setCheckin(await api('/api/checkins', { method: 'POST' }))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   useEffect(() => {
     load()
@@ -146,6 +158,33 @@ export default function DashboardPage() {
             <div className="row dash-mini-stats">
               <span>今日 {stats.todaySessions} 次</span>
               <span>累计 {formatMinutes(stats.totalDurationSeconds)} 分钟</span>
+            </div>
+          </div>
+
+          <div className="card dash-card">
+            <h3>📅 每日签到</h3>
+            {checkin ? (
+              <>
+                <div className="checkin-streak">
+                  <b>{checkin.streak}</b>
+                  <span>连续天数</span>
+                </div>
+                <p className="muted">累计 {checkin.total} 天 · 每次 +10 XP</p>
+                {checkin.checkedToday ? (
+                  <p className="ok">✅ 今日已签到</p>
+                ) : (
+                  <button className="btn" onClick={doCheckIn}>
+                    ✅ 今日签到
+                  </button>
+                )}
+              </>
+            ) : (
+              <p className="muted">加载中...</p>
+            )}
+            <div className="row" style={{ marginTop: 12 }}>
+              <Link className="btn tiny secondary" to="/export/report">
+                📄 学习报告
+              </Link>
             </div>
           </div>
 

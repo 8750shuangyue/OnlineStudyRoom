@@ -778,6 +778,104 @@ button.link-btn:hover {
     padding: 24px 18px;
     border-radius: 22px;
   }
+
+  .btn {
+    min-height: 40px;
+  }
+
+  .inline-form input,
+  .modal-form input,
+  .modal-form select,
+  .modal-form textarea,
+  .note-add input {
+    font-size: 16px;
+  }
+
+  .friend-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* ============ 每日签到 ============ */
+.checkin-streak {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 2px;
+}
+
+.checkin-streak b {
+  font-size: 40px;
+  font-weight: 800;
+  background: linear-gradient(120deg, #fbbf24, #f97316);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.checkin-streak span {
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+/* ============ 打印 / 导出 PDF ============ */
+.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+}
+
+.print-table th,
+.print-table td {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 14px;
+}
+
+.print-doc section {
+  margin: 18px 0;
+}
+
+.print-doc pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: rgba(148, 163, 184, 0.08);
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+@media print {
+  .navbar,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .content {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .card,
+  .print-doc {
+    background: #fff !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #000 !important;
+  }
+
+  .print-table th,
+  .print-table td {
+    border-color: #333;
+  }
 }
 
 /* ============ 第 1 天：房间管理增强 ============ */

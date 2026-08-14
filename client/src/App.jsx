@@ -21,6 +21,7 @@ const RagPage = lazy(() => import('./pages/RagPage.jsx'))
 const MistakePage = lazy(() => import('./pages/MistakePage.jsx'))
 const MessageCenterPage = lazy(() => import('./pages/MessageCenterPage.jsx'))
 const NotesPage = lazy(() => import('./pages/NotesPage.jsx'))
+const ExportPage = lazy(() => import('./pages/ExportPage.jsx'))
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="mistakes" element={<MistakePage />} />
           <Route path="stats" element={<StatsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="export/:type" element={<ExportPage />} />
           <Route path="users/:username" element={<ProfilePage />} />
           <Route path="cards" element={<FlashcardsPage />} />
         </Route>
