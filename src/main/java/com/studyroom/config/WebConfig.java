@@ -1,9 +1,15 @@
 package com.studyroom.config;
 
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.resource.PathResourceResolver;
+
+import java.io.IOException;
 
 /**
  * 前后端分离开发时的跨域配置。
@@ -30,5 +36,32 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOrigins(allowedOrigins.split(","))
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*");
+    }
+
+    /**
+     * SPA 回退：前端路由（/join/xxx、/help 等）直接刷新时，
+     * 未命中的路径统一回退到 index.html，交给前端路由渲染。
+     */
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/**")
+                .addResourceLocations("classpath:/static/")
+                .resourceChain(true)
+                .addResolver(new PathResourceResolver() {
+                    @Override
+                    protected Resource getResource(String resourcePath, Resource location)
+                            throws IOException {
+                        if (resourcePath.startsWith("api/")
+                                || resourcePath.startsWith("ws/")
+                                || resourcePath.startsWith("actuator/")) {
+                            return null;
+                        }
+                        Resource requested = location.createRelative(resourcePath);
+                        if (requested.exists() && requested.isReadable()) {
+                            return requested;
+                        }
+                        return new ClassPathResource("/static/index.html");
+                    }
+                });
     }
 }

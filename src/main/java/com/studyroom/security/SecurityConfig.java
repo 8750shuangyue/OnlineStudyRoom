@@ -61,6 +61,14 @@ public class SecurityConfig {
                                 "/assets/**", "/sw.js", "/manifest.webmanifest",
                                 "/icon-192.png", "/icon-512.png", "/maskable-512.png",
                                 "/favicon.ico", "/error").permitAll()
+                        // SPA 客户端路由（/join/xxx、/u/xxx、/rooms/1、/help 等）放行，
+                        // 由前端路由处理；/api、/ws、/actuator 仍走鉴权
+                        .requestMatchers(request -> {
+                            String uri = request.getRequestURI();
+                            return !uri.startsWith("/api")
+                                    && !uri.startsWith("/ws")
+                                    && !uri.startsWith("/actuator");
+                        }).permitAll()
                         // 其余接口（未来的房间、计时等）需要登录
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, authException) -> {
