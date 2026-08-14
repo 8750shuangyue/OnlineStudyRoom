@@ -851,6 +851,15 @@ button.link-btn:hover {
   font-size: 12px;
 }
 
+.help-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  line-height: 1.6;
+}
+
 /* ============ 打印 / 导出 PDF ============ */
 .print-table {
   width: 100%;

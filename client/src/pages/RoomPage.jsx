@@ -50,6 +50,7 @@ export default function RoomPage() {
   const [leaderboard, setLeaderboard] = useState([])
   const [boardPeriod, setBoardPeriod] = useState('all')
   const [challenge, setChallenge] = useState(null)
+  const [linkCopied, setLinkCopied] = useState(false)
   const [session, setSession] = useState(null)
   const [elapsed, setElapsed] = useState(0)
   const [summary, setSummary] = useState(null)
@@ -509,6 +510,17 @@ export default function RoomPage() {
     }
   }
 
+  async function copyRoomLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+      setError('')
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
   async function sendInvite(username) {
     setInviteMsg('')
     setError('')
@@ -714,6 +726,9 @@ export default function RoomPage() {
               <>
                 <button className="btn" onClick={syncFocus} disabled={busy}>
                   同步专注
+                </button>
+                <button className="btn secondary" onClick={copyRoomLink}>
+                  {linkCopied ? '已复制' : '复制链接'}
                 </button>
                 <button className="btn secondary" onClick={openInvite}>
                   邀请好友

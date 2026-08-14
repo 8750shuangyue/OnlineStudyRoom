@@ -96,6 +96,9 @@ export default function Layout() {
         <NavLink to="/settings" className={({ isActive }) => (isActive ? 'active' : '')}>
           设置
         </NavLink>
+        <NavLink to="/help" className={({ isActive }) => (isActive ? 'active' : '')}>
+          帮助
+        </NavLink>
         <span className="spacer" />
         <Link className="username" to={`/users/${user?.username}`}>
           {user?.username}
