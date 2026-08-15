@@ -60,7 +60,10 @@ public class WebConfig implements WebMvcConfigurer {
                         if (requested.exists() && requested.isReadable()) {
                             return requested;
                         }
-                        return new ClassPathResource("/static/index.html");
+                        // 无前端构建（CI 后端 job）时 index.html 不存在，
+                        // 返回 null 走 404，避免 500
+                        Resource fallback = new ClassPathResource("/static/index.html");
+                        return fallback.exists() ? fallback : null;
                     }
                 });
     }
