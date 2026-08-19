@@ -158,6 +158,19 @@ public interface StudySessionRepository extends JpaRepository<StudySession, Long
     List<StudySession> findByUserIdAndDurationSecondsGreaterThanEqualAndStartedAtGreaterThanEqual(
             Long userId, long minSeconds, LocalDateTime from);
 
+    List<StudySession> findByUserIdAndStartedAtGreaterThanEqualAndStartedAtLessThan(
+            Long userId, LocalDateTime from, LocalDateTime to);
+
+    @Query("""
+            select s.room.id, s.room.name, s.room.category, coalesce(sum(s.durationSeconds), 0)
+            from StudySession s
+            where s.user.id = :userId and s.durationSeconds >= 900
+              and (:from is null or s.startedAt >= :from)
+            group by s.room.id, s.room.name, s.room.category
+            order by sum(s.durationSeconds) desc
+            """)
+    List<Object[]> roomMinutesByUser(@Param("userId") Long userId, @Param("from") LocalDateTime from);
+
     @Query("select distinct s.user.id from StudySession s where s.startedAt >= :from")
     List<Long> distinctUserIdsSince(@Param("from") LocalDateTime from);
 

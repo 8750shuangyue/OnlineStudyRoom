@@ -1,7 +1,10 @@
 package com.studyroom.stats;
 
+import com.studyroom.checkin.CheckInRepository;
+import com.studyroom.note.NoteRepository;
 import com.studyroom.room.RoomRepository;
 import com.studyroom.study.StudySessionRepository;
+import com.studyroom.task.TaskRepository;
 import com.studyroom.user.User;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,10 +28,65 @@ public class StatsService {
 
     private final StudySessionRepository studySessionRepository;
     private final RoomRepository roomRepository;
+    private final TaskRepository taskRepository;
+    private final NoteRepository noteRepository;
+    private final CheckInRepository checkInRepository;
 
-    public StatsService(StudySessionRepository studySessionRepository, RoomRepository roomRepository) {
+    public StatsService(StudySessionRepository studySessionRepository,
+                        RoomRepository roomRepository,
+                        TaskRepository taskRepository,
+                        NoteRepository noteRepository,
+                        CheckInRepository checkInRepository) {
         this.studySessionRepository = studySessionRepository;
         this.roomRepository = roomRepository;
+        this.taskRepository = taskRepository;
+        this.noteRepository = noteRepository;
+        this.checkInRepository = checkInRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public DayReview dayReview(User user, LocalDate date) {
+        LocalDateTime from = date.atStartOfDay();
+        LocalDateTime to = from.plusDays(1);
+        List<SessionBrief> sessions = studySessionRepository
+                .findByUserIdAndStartedAtGreaterThanEqualAndStartedAtLessThan(user.getId(), from, to)
+                .stream()
+                .map(s -> new SessionBrief(s.getId(), s.getRoom().getName(),
+                        s.getStartedAt(), s.getDurationSeconds()))
+                .toList();
+        long totalMinutes = studySessionRepository.totalDurationSecondsByUserIdBetween(
+                user.getId(), from, to) / 60;
+        long tasksDone = taskRepository
+                .countByUserIdAndCompletedAtGreaterThanEqualAndCompletedAtLessThan(
+                        user.getId(), from, to);
+        long notesCreated = noteRepository
+                .countByUserIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        user.getId(), from, to);
+        boolean checkedIn = checkInRepository.findByUserIdAndDate(user.getId(), date).isPresent();
+        return new DayReview(date, sessions, totalMinutes, tasksDone, notesCreated, checkedIn);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RoomStat> roomDistribution(User user, Integer days) {
+        LocalDateTime from = days == null || days <= 0
+                ? null
+                : LocalDate.now().minusDays(days).atStartOfDay();
+        return studySessionRepository.roomMinutesByUser(user.getId(), from).stream()
+                .map(row -> new RoomStat((Long) row[0], (String) row[1], (String) row[2],
+                        ((Number) row[3]).longValue() / 60))
+                .filter(r -> r.minutes() > 0)
+                .toList();
+    }
+
+    public record SessionBrief(Long id, String roomName, LocalDateTime startedAt,
+                               Long durationSeconds) {
+    }
+
+    public record DayReview(LocalDate date, List<SessionBrief> sessions, long totalMinutes,
+                            long tasksDone, long notesCreated, boolean checkedIn) {
+    }
+
+    public record RoomStat(Long roomId, String roomName, String category, long minutes) {
     }
 
     @Transactional(readOnly = true)

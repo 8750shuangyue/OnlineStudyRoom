@@ -12,7 +12,7 @@ export function AuthProvider({ children }) {
       return
     }
     api('/api/auth/me')
-      .then((data) => setUser({ username: data.username }))
+      .then((data) => setUser({ username: data.username, admin: data.admin === 'true' }))
       .catch(() => {
         clearToken()
         setUser(null)

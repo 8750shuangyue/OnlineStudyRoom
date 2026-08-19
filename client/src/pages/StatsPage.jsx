@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import { api } from '../api.js'
 import { getToken } from '../api.js'
 import ReactMarkdown from 'react-markdown'
@@ -54,17 +55,19 @@ export default function StatsPage() {
   const [error, setError] = useState('')
   const [weeklyReport, setWeeklyReport] = useState('')
   const [weeklyBusy, setWeeklyBusy] = useState(false)
+  const [rooms, setRooms] = useState([])
 
   const load = useCallback(async () => {
     try {
-      const [s, g, b, w, t, h, ta] = await Promise.all([
+      const [s, g, b, w, t, h, ta, r] = await Promise.all([
         api('/api/stats/me'),
         api('/api/goals'),
         api(`/api/leaderboard/global?period=${period}&metric=${metric}`),
         api('/api/stats/weekly'),
         api('/api/stats/trend?days=14'),
         api('/api/stats/heatmap'),
-        api('/api/stats/time-analysis')
+        api('/api/stats/time-analysis'),
+        api('/api/stats/rooms?days=90')
       ])
       setStats(s)
       setGoal(g)
@@ -73,6 +76,7 @@ export default function StatsPage() {
       setTrend(t)
       setHeatmap(h)
       setTimeBuckets(ta)
+      setRooms(r)
     } catch (err) {
       setError(err.message)
     }
@@ -201,6 +205,9 @@ export default function StatsPage() {
           <button className="btn secondary" onClick={exportCsv}>
             ⬇ 导出 CSV
           </button>
+          <Link className="btn secondary" to="/review">
+            📖 学习日记
+          </Link>
         </div>
       </div>
       {error && <p className="error">{error}</p>}
@@ -248,6 +255,31 @@ export default function StatsPage() {
                     <span>最佳日 {weekly.bestDay}</span>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {rooms.length > 0 && (
+            <div className="card">
+              <h3>🏠 房间专注分布（近 90 天）</h3>
+              <div className="room-dist-list">
+                {rooms.map((r) => (
+                  <div className="room-dist-row" key={r.roomId}>
+                    <span className="muted">
+                      🏠 {r.roomName}
+                      {r.category ? `（${r.category}）` : ''}
+                    </span>
+                    <div className="room-dist-bar-wrap">
+                      <div
+                        className="room-dist-bar"
+                        style={{
+                          width: `${Math.max(4, Math.round((r.minutes / rooms[0].minutes) * 100))}%`
+                        }}
+                      />
+                    </div>
+                    <b>{r.minutes} 分钟</b>
+                  </div>
+                ))}
               </div>
             </div>
           )}

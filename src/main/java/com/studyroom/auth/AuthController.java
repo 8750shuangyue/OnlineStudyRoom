@@ -1,6 +1,7 @@
 package com.studyroom.auth;
 
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +18,9 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+
+    @Value("${app.admin.username:}")
+    private String adminUsername;
 
     public AuthController(AuthService authService) {
         this.authService = authService;
@@ -41,6 +45,8 @@ public class AuthController {
     /** 需要登录才能访问，用来验证 JWT 是否有效 */
     @GetMapping("/me")
     public Map<String, String> me(Authentication authentication) {
-        return Map.of("username", authentication.getName());
+        String username = authentication.getName();
+        boolean admin = adminUsername != null && adminUsername.equals(username) && !adminUsername.isBlank();
+        return Map.of("username", username, "admin", String.valueOf(admin));
     }
 }

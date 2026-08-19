@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { api } from '../api.js'
+import { useAuth } from '../auth.jsx'
 import { clearMentions } from '../useMessages.js'
 
 function formatTime(iso) {
@@ -15,23 +16,29 @@ function formatTime(iso) {
 
 export default function MessageCenterPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [mentions, setMentions] = useState([])
   const [invites, setInvites] = useState([])
   const [friendRequests, setFriendRequests] = useState([])
   const [unreadRooms, setUnreadRooms] = useState([])
   const [briefs, setBriefs] = useState([])
   const [briefBusy, setBriefBusy] = useState(false)
+  const [announcements, setAnnouncements] = useState([])
+  const [annForm, setAnnForm] = useState({ title: '', content: '' })
+  const [annBusy, setAnnBusy] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
     try {
-      const [m, inv, fr, ur] = await Promise.all([
+      const [m, inv, fr, ur, ann] = await Promise.all([
         api('/api/notifications?limit=50'),
         api('/api/invites'),
         api('/api/friends/requests'),
-        api('/api/rooms/unread')
+        api('/api/rooms/unread'),
+        api('/api/announcements')
       ])
+      setAnnouncements(ann)
       setMentions(m)
       setBriefs(m.filter((n) => n.type === 'DAILY_BRIEF' || n.type === 'WEEKLY_REPORT'))
       setInvites(inv)
@@ -114,10 +121,69 @@ export default function MessageCenterPage() {
     }
   }
 
+  async function publishAnnouncement(e) {
+    e.preventDefault()
+    setAnnBusy(true)
+    setError('')
+    try {
+      await api('/api/announcements/admin', {
+        method: 'POST',
+        body: { title: annForm.title, content: annForm.content }
+      })
+      setAnnForm({ title: '', content: '' })
+      await load()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setAnnBusy(false)
+    }
+  }
+
   return (
     <div>
       <h2>消息中心</h2>
       {error && <p className="error">{error}</p>}
+
+      <div className="card">
+        <h3>📢 公告</h3>
+        {announcements.length === 0 ? (
+          <p className="muted">暂无公告</p>
+        ) : (
+          <div className="msg-list">
+            {announcements.map((a) => (
+              <div className="msg-item" key={a.id}>
+                <div className="msg-title">
+                  📢 {a.title}
+                  <span className="msg-time">{formatTime(a.createdAt)}</span>
+                </div>
+                <div className="msg-body">{a.content}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {user?.admin && (
+          <form className="modal-form" onSubmit={publishAnnouncement}>
+            <input
+              placeholder="公告标题"
+              value={annForm.title}
+              onChange={(e) => setAnnForm({ ...annForm, title: e.target.value })}
+              maxLength={200}
+            />
+            <textarea
+              placeholder="公告内容"
+              value={annForm.content}
+              onChange={(e) => setAnnForm({ ...annForm, content: e.target.value })}
+              maxLength={2000}
+              rows={3}
+            />
+            <button
+              disabled={annBusy || !annForm.title.trim() || !annForm.content.trim()}
+            >
+              {annBusy ? '发布中...' : '发布公告'}
+            </button>
+          </form>
+        )}
+      </div>
 
       <div className="card">
         <div className="row-between">

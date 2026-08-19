@@ -866,6 +866,74 @@ button.link-btn:hover {
   color: #fbbf24;
 }
 
+.room-dist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.room-dist-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.room-dist-row > span {
+  width: 180px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.room-dist-bar-wrap {
+  flex: 1;
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.15);
+  overflow: hidden;
+}
+
+.room-dist-bar {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #22d3ee, #8b5cf6);
+}
+
+.room-dist-row b {
+  width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.review-session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review-session-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.review-session-list li span:first-child {
+  width: 70px;
+  font-variant-numeric: tabular-nums;
+}
+
+.review-session-list li b {
+  margin-left: auto;
+}
+
 /* ============ 打印 / 导出 PDF ============ */
 .print-table {
   width: 100%;

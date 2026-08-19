@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -65,6 +66,20 @@ public class StatsController extends CurrentUserSupport {
     @GetMapping("/stats/time-analysis")
     public List<TimeBucket> timeAnalysis(Authentication authentication) {
         return statsService.timeAnalysis(currentUser(authentication));
+    }
+
+    @GetMapping("/stats/day")
+    public StatsService.DayReview dayReview(@RequestParam(defaultValue = "") String date,
+                                            Authentication authentication) {
+        LocalDate day = date.isBlank() ? LocalDate.now() : LocalDate.parse(date);
+        return statsService.dayReview(currentUser(authentication), day);
+    }
+
+    @GetMapping("/stats/rooms")
+    public List<StatsService.RoomStat> roomDistribution(
+            @RequestParam(defaultValue = "90") int days,
+            Authentication authentication) {
+        return statsService.roomDistribution(currentUser(authentication), days);
     }
 
 }

@@ -24,6 +24,7 @@ const NotesPage = lazy(() => import('./pages/NotesPage.jsx'))
 const ExportPage = lazy(() => import('./pages/ExportPage.jsx'))
 const HelpPage = lazy(() => import('./pages/HelpPage.jsx'))
 const JoinInvitePage = lazy(() => import('./pages/JoinInvitePage.jsx'))
+const ReviewPage = lazy(() => import('./pages/ReviewPage.jsx'))
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth()
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="rag" element={<RagPage />} />
           <Route path="mistakes" element={<MistakePage />} />
           <Route path="stats" element={<StatsPage />} />
+          <Route path="review" element={<ReviewPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="help" element={<HelpPage />} />
           <Route path="export/:type" element={<ExportPage />} />
