@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
@@ -59,6 +60,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(NoResourceFoundException ex) {
         return build(HttpStatus.NOT_FOUND.value(), "资源不存在");
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodNotSupported(
+            HttpRequestMethodNotSupportedException ex) {
+        // 扫描器会向静态/SPA 路径发 POST 等请求，安静返回 405，不打 ERROR 噪音
+        log.debug("请求方法不支持: {}", ex.getMessage());
+        return build(HttpStatus.METHOD_NOT_ALLOWED.value(), "请求方法不支持");
     }
 
     @ExceptionHandler(Exception.class)
